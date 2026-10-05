@@ -264,7 +264,8 @@ final class IslandWindowController: NSWindowController {
             fsm.mouseEntered()
         }
         if !inIsland && wasInIsland {
-            fsm.mouseLeft()
+            // Fold right away on leave, except when pinned or typing in the chat.
+            fsm.mouseLeft(quick: !state.isPinned && state.view != .prompt)
         }
         wasInIsland = inIsland
 
