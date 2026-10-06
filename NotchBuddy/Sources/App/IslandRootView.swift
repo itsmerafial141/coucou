@@ -445,6 +445,11 @@ struct CountdownBar: View {
 
 struct IslandContentView: View {
     @ObservedObject var state: AppState
+    /// Tabs shown since the island opened. Only these are built: building all ~25 tabs on every
+    /// open (each laid out on every frame of the open spring, every onAppear firing) made opening
+    /// heavy. Visited tabs stay alive so drafts survive tab switches, as before; this view is torn
+    /// down when the island folds, which resets the set.
+    @State private var visited: Set<IslandView> = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -454,7 +459,7 @@ struct IslandContentView: View {
                 .animation(.easeInOut(duration: 0.2), value: state.view == .confused)
 
             ZStack {
-                ForEach(IslandView.allCases, id: \.self) { v in
+                ForEach(IslandView.allCases.filter { $0 == state.view || visited.contains($0) }, id: \.self) { v in
                     let active = state.view == v
                     // Views that fill available height instead of the fixed 98pt content frame:
                     // chat (prompt) is always flexible; mail is flexible only when active so
@@ -479,6 +484,8 @@ struct IslandContentView: View {
         .padding(.top, 8)
         .padding(.bottom, 10)
         .foregroundColor(Color(hex: "#F5F6F8"))
+        .onAppear { visited.insert(state.view) }
+        .onChange(of: state.view) { old, _ in visited.insert(old) }
     }
 }
 
@@ -648,7 +655,8 @@ struct CompactMiniGrid: View {
         let cols = [GridItem(.fixed(12), spacing: 4), GridItem(.fixed(12), spacing: 4)]
         LazyVGrid(columns: cols, spacing: 4) {
             ForEach(others) { task in
-                MiniBotCanvasView(task: task)
+                // 12 pt faces in the resting island, always on screen: 15 fps is enough.
+                MiniBotCanvasView(task: task, fps: 15)
                     .frame(width: 12 / 0.6, height: 12 / 0.6)
                     .frame(width: 12, height: 12, alignment: .center)
             }

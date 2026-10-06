@@ -13,7 +13,9 @@ struct BotCanvasView: View {
     @StateObject private var engine = BotEngine()
 
     var body: some View {
-        TimelineView(.animation(paused: state.mode == .hidden)) { timeline in
+        // Full rate only while expanded; the resting island is fine at 30 fps.
+        TimelineView(.animation(minimumInterval: state.mode == .expanded ? nil : 1.0 / 30.0,
+                                paused: state.mode == .hidden)) { timeline in
             Canvas { context, size in
                 let now = timeline.date.timeIntervalSinceReferenceDate
                 let dtRaw = min(0.05, now - engine.lastTime)
@@ -214,11 +216,13 @@ struct BotCanvasView: View {
 struct MiniBotCanvasView: View {
     let task: AgentTask
     var isDancing: Bool = false
+    var fps: Double = 30
     @StateObject private var engine: BotEngine
 
-    init(task: AgentTask, isDancing: Bool = false) {
+    init(task: AgentTask, isDancing: Bool = false, fps: Double = 30) {
         self.task = task
         self.isDancing = isDancing
+        self.fps = fps
         _engine = StateObject(wrappedValue: {
             let e = BotEngine()
             e.isMini = true
@@ -228,7 +232,8 @@ struct MiniBotCanvasView: View {
     }
 
     var body: some View {
-        TimelineView(.animation) { timeline in
+        // Mini bots are tiny and there can be several: uncapped they redraw at display rate.
+        TimelineView(.animation(minimumInterval: 1.0 / fps)) { timeline in
             Canvas { context, size in
                 let now = timeline.date.timeIntervalSinceReferenceDate
                 let dt = min(0.05, now - engine.lastTime)

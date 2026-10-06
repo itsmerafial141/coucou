@@ -10,7 +10,8 @@ import os
 final class MenuBarTray: ObservableObject {
     static let shared = MenuBarTray()
 
-    struct Item: Identifiable {
+    // AXUIElement/NSImage are immutable CF/AppKit objects here: safe to hand from the scan thread.
+    struct Item: Identifiable, @unchecked Sendable {
         let id: String
         let name: String
         let icon: NSImage
@@ -141,9 +142,26 @@ final class MenuBarTray: ObservableObject {
         AXIsProcessTrustedWithOptions(opts)
     }
 
+    private var refreshGeneration = 0
+
     /// Reads every app's menu bar icons. Runs only when the Menu Bar tab opens, never in the background.
+    /// The AX scan walks every running app (each call may wait out its timeout), so it runs off the
+    /// main thread: on the main thread it froze the island for seconds as it opened.
     func refresh() {
         guard canListItems else { items = []; return }
+        refreshGeneration += 1
+        let generation = refreshGeneration
+        Task.detached(priority: .userInitiated) {
+            let found = Self.scanItems()
+            await MainActor.run {
+                // A newer refresh started meanwhile: its result wins.
+                guard generation == MenuBarTray.shared.refreshGeneration else { return }
+                MenuBarTray.shared.items = found
+            }
+        }
+    }
+
+    nonisolated private static func scanItems() -> [Item] {
         // ponytail: shows the app icon, not the exact menu bar glyph (that needs Screen Recording).
         let alwaysVisible: Set<String> = ["com.apple.menuextra.clock", "com.apple.menuextra.controlcenter"]
         var found: [(x: CGFloat, item: Item)] = []
@@ -172,7 +190,7 @@ final class MenuBarTray: ObservableObject {
                                           element: kid)))
             }
         }
-        items = found.sorted { $0.x < $1.x }.map(\.item)
+        return found.sorted { $0.x < $1.x }.map(\.item)
     }
 
     // MARK: - Opening an icon under the island
@@ -373,7 +391,7 @@ final class MenuBarTray: ObservableObject {
         }
     }
 
-    private static func attr(_ e: AXUIElement, _ name: String) -> AnyObject? {
+    nonisolated private static func attr(_ e: AXUIElement, _ name: String) -> AnyObject? {
         var v: AnyObject?
         return AXUIElementCopyAttributeValue(e, name as CFString, &v) == .success ? v : nil
     }

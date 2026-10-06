@@ -222,17 +222,37 @@ final class IslandWindowController: NSWindowController {
     // MARK: - 60 Hz polling loop
 
     private func startPolling() {
+        // Fires on the main run loop, so run synchronously instead of spawning a Task per tick.
         frameTimer = Timer.scheduledTimer(withTimeInterval: 1.0/60.0, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            Task { @MainActor in self.pollFrame() }
+            MainActor.assumeIsolated { self?.pollFrame() }
         }
+        frameTimer?.tolerance = 1.0/120.0
         RunLoop.main.add(frameTimer!, forMode: .common)
     }
+
+    /// Inputs of the last pollFrame(); an identical tick has nothing to update.
+    private struct PollInputs: Equatable {
+        var mouse: CGPoint, panelFrame: CGRect, islandRect: CGRect, buttons: Int
+    }
+    private var lastPollInputs: PollInputs?
 
     private func pollFrame() {
         guard let panel = window as? IslandPanel else { return }
 
         let mouse = NSEvent.mouseLocation
+
+        // AppState can hide the island by itself (last task ended): keep the FSM in step.
+        if state.mode == .hidden && fsm.state == .petit { fsm.hiddenExternally() }
+
+        // Idle skip: mouse still, panel/island unchanged, no drag in flight → nothing to do.
+        // ponytail: still a 60 Hz wakeup; swap for mouseMoved monitors if idle CPU still matters.
+        let inputs = PollInputs(mouse: mouse, panelFrame: panel.frame,
+                                islandRect: panel.currentIslandFrame(nw: notchW, nh: notchH),
+                                buttons: NSEvent.pressedMouseButtons)
+        let dragging = inAttachDrag || attachDragStart != nil || leaveDeferredByDrag
+        if inputs == lastPollInputs && !dragging { return }
+        lastPollInputs = inputs
+
         moveToMouseScreen()
 
         // Convert mouse to panel-local coords (macOS: origin bottom-left)
@@ -264,9 +284,6 @@ final class IslandWindowController: NSWindowController {
         if abs(newPos.x - cur.x) > 1 || abs(newPos.y - cur.y) > 1 {
             AppState.shared.mousePosition = newPos
         }
-
-        // AppState can hide the island by itself (last task ended): keep the FSM in step.
-        if state.mode == .hidden && fsm.state == .petit { fsm.hiddenExternally() }
 
         // Feed FSM hover enter/leave
         if inIsland && !wasInIsland {
