@@ -417,6 +417,11 @@ func drawOutfitFrontStatic(
         c.scaleBy(x: max(0.001, posP), y: max(0.001, posP))
         c.drawLayer { lCtx in var l = lCtx; drawBowFront(ctx: &l, H: H, bodyPath: bodyPath) }
 
+    case .headset, .headsetMuted:
+        var c = baseCtx; c.opacity = layerOpacity
+        c.translateBy(x: 0, y: -(1 - posP) * H.ry * 1.0); c.scaleBy(x: hatScale, y: hatScale)
+        c.drawLayer { lCtx in var l = lCtx; drawHeadsetCups(ctx: &l, H: H, muted: outfit == .headsetMuted) }
+
     default:
         break
     }
@@ -491,6 +496,11 @@ func drawOutfitBehindStatic(
         }
         c.drawLayer { lCtx in var l = lCtx; drawCrownPart(ctx: &l, H: H, side: -1, simplified: simplified) }
 
+    case .headset, .headsetMuted:
+        var c = ctx; c.opacity = layerOpacity
+        c.translateBy(x: 0, y: -(1 - posP) * H.ry * 1.0); c.scaleBy(x: hatScale, y: hatScale)
+        c.drawLayer { lCtx in var l = lCtx; drawHeadsetBand(ctx: &l, H: H) }
+
     case .witchHat:
         var c = ctx; c.opacity = layerOpacity
         if abs(H.roll) > 0.01 {
@@ -510,6 +520,60 @@ func drawOutfitBehindStatic(
 // MARK: - Crown geometry helper
 
 private func crownYb(_ H: MochiH) -> CGFloat { 0.46 }
+
+// MARK: - Headset (Discord voice): band behind the head, cups + mic in front
+
+private let headsetDark = Color(hex: "#2B2D33")
+private let headsetAccent = Color(hex: "#5865F2")
+
+private func drawHeadsetBand(ctx: inout GraphicsContext, H: MochiH) {
+    let l = mProj(H, (-1.0, 0.30, 0)), r = mProj(H, (1.0, 0.30, 0)), top = mProj(H, (0, 1.0, 0))
+    var band = Path()
+    band.move(to: CGPoint(x: l.x, y: l.y))
+    // Control well above the crown: a quad curve only reaches halfway to it.
+    band.addQuadCurve(to: CGPoint(x: r.x, y: r.y), control: CGPoint(x: top.x, y: top.y - H.R * 1.15))
+    ctx.stroke(band, with: .color(headsetDark), style: StrokeStyle(lineWidth: H.R * 0.16, lineCap: .round))
+    ctx.stroke(band, with: .color(.white.opacity(0.18)), style: StrokeStyle(lineWidth: H.R * 0.05, lineCap: .round))
+}
+
+private func drawHeadsetCups(ctx: inout GraphicsContext, H: MochiH, muted: Bool) {
+    let R = H.R
+    for sd: CGFloat in [-1, 1] {
+        let c = mProj(H, (sd * 1.0, 0.18, 0))
+        let cup = CGRect(x: c.x - R * 0.20, y: c.y - R * 0.28, width: R * 0.40, height: R * 0.56)
+        ctx.fill(Path(roundedRect: cup, cornerRadius: R * 0.16), with: .color(headsetDark))
+        ctx.fill(Path(roundedRect: cup.insetBy(dx: R * 0.07, dy: R * 0.09), cornerRadius: R * 0.1),
+                 with: .color(headsetAccent))
+    }
+    // Mic boom from the left cup towards the mouth.
+    let from = mProj(H, (-1.0, 0.0, 0)), to = mProj(H, (-0.45, -0.38, 0.85))
+    var boom = Path()
+    boom.move(to: CGPoint(x: from.x, y: from.y))
+    boom.addQuadCurve(to: CGPoint(x: to.x, y: to.y), control: CGPoint(x: from.x, y: to.y))
+    ctx.stroke(boom, with: .color(headsetDark), style: StrokeStyle(lineWidth: R * 0.07, lineCap: .round))
+    ctx.fill(Path(ellipseIn: CGRect(x: to.x - R * 0.09, y: to.y - R * 0.07, width: R * 0.18, height: R * 0.14)),
+             with: .color(headsetDark))
+    // Mic tip: green while live, red when muted.
+    let tipColor = Color(hex: muted ? "#F4505E" : "#22C55E")
+    let tip = CGRect(x: to.x - R * 0.055, y: to.y - R * 0.045, width: R * 0.11, height: R * 0.09)
+    ctx.fill(Path(ellipseIn: tip.insetBy(dx: -R * 0.05, dy: -R * 0.05)), with: .color(tipColor.opacity(0.35)))
+    ctx.fill(Path(ellipseIn: tip), with: .color(tipColor))
+    // Muted: a strip of tape over the mouth.
+    if muted {
+        let m = mProj(H, (0, -0.36, 0.93))
+        var tape = ctx
+        tape.translateBy(x: m.x, y: m.y)
+        tape.rotate(by: .radians(-0.12))
+        // Masking-tape beige: reads on a white Mochi as well as on a coloured one.
+        let strip = CGRect(x: -R * 0.38, y: -R * 0.12, width: R * 0.76, height: R * 0.24)
+        tape.fill(Path(roundedRect: strip, cornerRadius: R * 0.04), with: .color(Color(hex: "#D8CBA8")))
+        tape.stroke(Path(roundedRect: strip, cornerRadius: R * 0.04), with: .color(.black.opacity(0.3)), lineWidth: R * 0.02)
+        for dx: CGFloat in [-0.24, 0.24] {   // crossed strip ends
+            var line = Path(); line.move(to: CGPoint(x: R * dx - R * 0.05, y: -R * 0.12)); line.addLine(to: CGPoint(x: R * dx + R * 0.05, y: R * 0.12))
+            tape.stroke(line, with: .color(.black.opacity(0.15)), lineWidth: R * 0.015)
+        }
+    }
+}
 
 // MARK: - Bunny ears (behind body)
 

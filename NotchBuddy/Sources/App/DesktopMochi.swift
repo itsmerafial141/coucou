@@ -45,8 +45,10 @@ struct DesktopBotView: View {
                 // Dance when music plays (same rules as compact mode)
                 let dancing: Bool = {
                     #if !APPSTORE
-                    guard appState.musicPlaying else { return false }
-                    guard appState.activeIntegrations.contains("integration_music") else { return false }
+                    let active = appState.activeIntegrations
+                    guard (appState.musicPlaying && active.contains("integration_music"))
+                        || (SpotifyController.shared.playing && active.contains(SpotifyController.pillId))
+                    else { return false }
                     let allowed: Set<BotState> = [.idle, .working, .thinking, .searching, .finished]
                     return allowed.contains(appState.effectiveState)
                     #else
@@ -257,7 +259,7 @@ final class DesktopMochiController {
 
         phase = .flyingOut
         let s = DesktopMochiController.panelSize
-        let screen = IslandWindowController.notchScreen() ?? NSScreen.main!
+        let screen = IslandWindowController.islandScreen()!
         let startOrigin = NSPoint(x: screen.frame.midX - s/2, y: screen.frame.maxY - s)
         let target = loadSavedPosition()
 
@@ -329,7 +331,7 @@ final class DesktopMochiController {
         cancellables.removeAll()
         isSleeping = false
         let s = DesktopMochiController.panelSize
-        let screen = IslandWindowController.notchScreen() ?? NSScreen.main!
+        let screen = IslandWindowController.islandScreen()!
         let targetOrigin = NSPoint(x: screen.frame.midX - s/2, y: screen.frame.maxY - s)
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = 0.45
@@ -357,7 +359,7 @@ final class DesktopMochiController {
         isSleeping = false
 
         let s = DesktopMochiController.panelSize
-        let screen = IslandWindowController.notchScreen() ?? NSScreen.main!
+        let screen = IslandWindowController.islandScreen()!
         let targetOrigin = NSPoint(x: screen.frame.midX - s/2, y: screen.frame.maxY - s)
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = 0.45
@@ -617,7 +619,7 @@ final class DesktopMochiController {
     }
 
     private func handleDragRelease(at mouse: NSPoint) {
-        let islandController = (NSApp.delegate as? AppDelegate)?.islandController
+        let islandController = IslandWindowController.current
         let inNotchZone = islandController?.window?.frame.contains(mouse) == true
 
         if inNotchZone {

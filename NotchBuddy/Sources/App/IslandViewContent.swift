@@ -26,6 +26,32 @@ struct IslandViewContent: View {
         case .settings:  SettingsIslandView(state: state)
         case .greeting:  EmptyView()  // GreetingCanvasView overlaid in IslandRootView
         case .wardrobe:  WardrobeView(state: state)
+        case .menuBar:   MenuBarTrayView(state: state)
+        case .clipboard: ClipboardView(state: state)
+        case .system:
+            #if !APPSTORE
+            SystemStatsView(state: state)
+            #else
+            EmptyView()
+            #endif
+        case .spotify:
+            #if !APPSTORE
+            SpotifyPlayerView(state: state)
+            #else
+            EmptyView()
+            #endif
+        case .venturo:
+            #if !APPSTORE
+            VenturoDetailView(state: state)
+            #else
+            EmptyView()
+            #endif
+        case .discord:
+            #if !APPSTORE
+            DiscordFullView(state: state)
+            #else
+            EmptyView()
+            #endif
         }
     }
 }
@@ -123,7 +149,7 @@ struct OverviewView: View {
                 #else
                 let hideJumpButton = showingN8nDetail || activeDiffId != nil
                 #endif
-                if !hideJumpButton {
+                if !hideJumpButton && agent?.id != "integration_venturo" && agent?.id != "integration_discord" {
                     Button(action: { openAgentTarget(agent) }) {
                         Image(systemName: "arrow.up.right")
                             .font(.system(size: 8, weight: .medium))
@@ -240,6 +266,18 @@ struct OverviewView: View {
         case "integration_music":
             #if !APPSTORE
             MusicController.shared.openMusic()
+            #endif
+        case "integration_spotify":
+            #if !APPSTORE
+            SpotifyController.shared.openSpotify()
+            #endif
+        case "integration_venturo":
+            #if !APPSTORE
+            VenturoBotMonitor.shared.openApp()
+            #endif
+        case "integration_discord":
+            #if !APPSTORE
+            DiscordService.shared.openDiscord()
             #endif
         default:
             // Non-integration real tasks
@@ -767,6 +805,11 @@ struct UploadView: View {
                     colors: [Color(hex: "#22C55E").opacity(state.fileDragOver ? 0.13 : 0), Color.clear],
                     center: .bottom, startRadius: 0, endRadius: 200
                 ))
+            if !shelfFiles.isEmpty && !state.fileDragOver {
+                ShelfView(state: state, files: shelfFiles)
+                    .padding(.leading, 196)
+                    .padding(.trailing, 28)
+            } else {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Drop your files here")
                     .font(.system(size: 13, weight: .medium))
@@ -784,6 +827,7 @@ struct UploadView: View {
             }
             .padding(.leading, 196)
             .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
         .onChange(of: state.view) { _, newView in
             newView == .upload ? startTimer() : stopTimer()
@@ -806,6 +850,46 @@ struct UploadView: View {
     private func stopTimer() {
         animTimer?.invalidate()
         animTimer = nil
+    }
+
+    /// Files moved or deleted since they were dropped are hidden.
+    private var shelfFiles: [URL] {
+        state.shelf.filter { FileManager.default.fileExists(atPath: $0.path) }
+    }
+}
+
+// MARK: - File shelf (drag files back out of the island)
+
+struct ShelfView: View {
+    @ObservedObject var state: AppState
+    let files: [URL]
+
+    // Same structure as the "files are ready" card: text + capsule button left, pile right.
+    var body: some View {
+        HStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(files.count == 1 ? "1 file on the shelf" : "\(files.count) files on the shelf")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(hex: "#F5F6F8"))
+                Text(files.count == 1 ? "Drag to drop it anywhere" : "Drag to drop anywhere · click to pick one")
+                    .font(.system(size: 12.5))
+                    .foregroundColor(Color(hex: "#9398A1"))
+                    .lineLimit(1)
+                SecondaryButton("Clear shelf") { state.shelf = [] }
+            }
+            Spacer(minLength: 0)
+            FileStackView(files: files) { url in [
+                FileMenuItem(title: "Ask Mochi about it") {
+                    state.droppedFiles = [url]
+                    state.promptContext = .file(name: url.lastPathComponent, fileURL: url)
+                    state.view = .prompt
+                },
+                FileMenuItem(title: "Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([url]) },
+                FileMenuItem(title: "Remove from shelf") { state.shelf.removeAll { $0 == url } },
+            ] } onDropped: { delivered in state.shelf.removeAll { delivered.contains($0) } }
+                .frame(maxWidth: 220, alignment: .trailing)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -879,12 +963,15 @@ struct UploadingView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 12))
                             .foregroundColor(Color(hex: "#34D399"))
-                        Text("  \(state.droppedFile?.name ?? "File")")
+                        Text("  \(state.droppedFiles.count > 1 ? "\(state.droppedFiles.count) files" : (state.droppedFile?.name ?? "File"))")
                             .font(.system(size: 12.5, weight: .semibold))
                             .foregroundColor(Color(hex: "#34D399"))
                             .lineLimit(1).truncationMode(.middle)
                     } else {
-                        Text("Uploading \(state.droppedFile?.name ?? "file")")
+                        Text(FileStackLogic.uploadLabel(
+                            state.droppedFiles.count > 1 ? state.droppedFiles.map(\.lastPathComponent)
+                                                         : [state.droppedFile?.name ?? "file"],
+                            progress: Double(progress)))
                             .font(.system(size: 12.5))
                             .foregroundColor(Color(hex: "#A9ADB5"))
                             .lineLimit(1).truncationMode(.middle)
@@ -915,16 +1002,22 @@ struct ChooseView: View {
         ZStack(alignment: .leading) {
             CardBackground(wash: nil)
             VStack(alignment: .leading, spacing: 8) {
-                let fileName = state.droppedFile?.name ?? "file"
-                (Text(fileName).font(.system(size: 14, weight: .semibold)) + Text(" is ready.").font(.system(size: 14, weight: .semibold)))
+                let fileName = state.droppedFiles.count > 1 ? "\(state.droppedFiles.count) files" : (state.droppedFile?.name ?? "file")
+                (Text(fileName).font(.system(size: 14, weight: .semibold)) + Text(state.droppedFiles.count > 1 ? " are ready." : " is ready.").font(.system(size: 14, weight: .semibold)))
                 Text("What do you want to do with it?").font(.system(size: 12.5)).foregroundColor(Color(hex: "#9398A1"))
                 HStack(spacing: 8) {
-                    PrimaryButton("Ask a question") { state.view = .prompt }
+                    PrimaryButton(state.droppedFiles.count > 1 ? "Ask about them" : "Ask a question") { state.view = .prompt }
                     SecondaryButton("Send by email") { state.view = .mail }
                 }
             }
             .padding(.leading, 98)
             .padding(.trailing, 18)
+            let files = state.droppedFiles.isEmpty ? [state.droppedFile?.url].compactMap { $0 } : state.droppedFiles
+            if !files.isEmpty {
+                FileStackView(files: files, onDropped: { state.clearDelivered($0) })
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.trailing, 24)
+            }
         }
     }
 }
@@ -945,7 +1038,9 @@ struct MailView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 6) {
                     Text("New email").font(.system(size: 12, weight: .semibold))
-                    if let name = state.droppedFile?.name {
+                    if let first = state.droppedFile?.name {
+                        let n = state.droppedFiles.count
+                        let name = n > 1 ? "\(first) + \(n - 1) more" : first
                         Text("with").font(.system(size: 12)).foregroundColor(Color(hex: "#8E939C"))
                         Text(name).font(.system(size: 12)).foregroundColor(Color(hex: "#8E939C"))
                             .lineLimit(1).truncationMode(.middle)
@@ -998,11 +1093,11 @@ struct MailView: View {
             statusMsg = ""
             let recipient = to
             let msgBody  = bodyText
-            let fileURL  = state.droppedFile?.url
+            let files    = state.contextFiles(state.droppedFile?.url)
             Task {
                 let ok = await sendViaResend(apiKey: apiKey, from: fromAddr,
                                               to: recipient, subject: subj,
-                                              body: msgBody, fileURL: fileURL)
+                                              body: msgBody, files: files)
                 await MainActor.run {
                     isSending = false
                     if ok { onSuccess(recipient: recipient) }
@@ -1019,7 +1114,7 @@ struct MailView: View {
     }
 
     private func sendViaResend(apiKey: String, from: String, to: String,
-                                subject: String, body: String, fileURL: URL?) async -> Bool {
+                                subject: String, body: String, files: [URL]) async -> Bool {
         guard let url = URL(string: "https://api.resend.com/emails") else { return false }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -1032,12 +1127,11 @@ struct MailView: View {
             "subject": subject,
             "text": body.isEmpty ? " " : body
         ]
-        if let fileURL, let data = try? Data(contentsOf: fileURL) {
-            payload["attachments"] = [[
-                "filename": fileURL.lastPathComponent,
-                "content": data.base64EncodedString()
-            ]]
+        let attachments: [[String: String]] = files.compactMap { url in
+            guard let data = try? Data(contentsOf: url) else { return nil }
+            return ["filename": url.lastPathComponent, "content": data.base64EncodedString()]
         }
+        if !attachments.isEmpty { payload["attachments"] = attachments }
         guard let httpBody = try? JSONSerialization.data(withJSONObject: payload) else { return false }
         request.httpBody = httpBody
         guard let (_, response) = try? await URLSession.shared.data(for: request) else { return false }
@@ -1055,10 +1149,8 @@ struct MailView: View {
             return
         }
         var items: [Any] = [bodyText.isEmpty ? " " : bodyText]
-        if let url = state.droppedFile?.url,
-           FileManager.default.fileExists(atPath: url.path) {
-            items.append(url)
-        }
+        items += state.contextFiles(state.droppedFile?.url)
+            .filter { FileManager.default.fileExists(atPath: $0.path) } as [Any]
         service.recipients = [to]
         service.subject = subject
         service.perform(withItems: items)
@@ -1073,14 +1165,10 @@ struct MailView: View {
         let bodyExpr = bodyLines.map { "\"\(asEscape($0))\"" }.joined(separator: " & linefeed & ")
             + " & return & return"
 
-        let attachBlock: String
-        if let url = state.droppedFile?.url,
-           FileManager.default.fileExists(atPath: url.path) {
-            let escapedPath = asEscape(url.path)
-            attachBlock = "make new attachment with properties {file name:(POSIX file \"\(escapedPath)\")} at after the last paragraph of content"
-        } else {
-            attachBlock = ""
-        }
+        let attachBlock = state.contextFiles(state.droppedFile?.url)
+            .filter { FileManager.default.fileExists(atPath: $0.path) }
+            .map { "make new attachment with properties {file name:(POSIX file \"\(asEscape($0.path))\")} at after the last paragraph of content" }
+            .joined(separator: "\n                ")
 
         let script = """
         tell application "Mail"
@@ -1166,8 +1254,25 @@ struct PromptView: View {
                     Spacer()
                 }
 
-                HStack(spacing: 0) {
+                HStack(spacing: 6) {
                     Spacer()
+                    if !state.chatHistory.isEmpty {
+                        Button {
+                            NotificationCenter.default.post(name: .islandNewConversation, object: nil)
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "square.and.pencil").font(.system(size: 9))
+                                Text("New chat").font(.system(size: 10.5, weight: .medium))
+                            }
+                            .foregroundColor(Color(hex: "#7B8089"))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.white.opacity(0.06))
+                            .clipShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .help("New conversation (⌘K)")
+                    }
                     Button {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                             showModelPicker.toggle()
@@ -1615,7 +1720,25 @@ struct IntegrationCardView: View {
             #else
             return false
             #endif
-        case "ai_anthropic":  return KeychainStore.shared.get("anthropic-api-key") != nil
+        case "integration_spotify":
+            #if !APPSTORE
+            return SpotifyController.shared.isInstalled
+            #else
+            return false
+            #endif
+        case "integration_venturo":
+            #if !APPSTORE
+            return VenturoBotMonitor.shared.isInstalled
+            #else
+            return false
+            #endif
+        case "integration_discord":
+            #if !APPSTORE
+            return DiscordService.shared.isInstalled
+            #else
+            return false
+            #endif
+        case "ai_anthropic":  return AnthropicAuth.isConfigured
         case "ai_google":     return KeychainStore.shared.get("google-api-key")    != nil
         case "ai_openai":     return KeychainStore.shared.get("openai-api-key")    != nil
         case "ai_ollama":     return !AppState.shared.ollamaServerURL.isEmpty
@@ -1706,8 +1829,37 @@ struct IntegrationCardView: View {
         #endif
     }
 
+    // Spotify: show card when a track is loaded or automation is denied
+    private var spotifyIsActive: Bool {
+        #if !APPSTORE
+        guard task.id == SpotifyController.pillId else { return false }
+        return SpotifyController.shared.automationDenied || SpotifyController.shared.trackTitle != nil
+        #else
+        return false
+        #endif
+    }
+
     private var statusDot: Color {
         #if !APPSTORE
+        if task.id == DiscordService.pillId {
+            let d = DiscordService.shared
+            if d.myVoice != nil { return Color(hex: "#22C55E") }
+            if case .failed = d.connection { return Color(hex: "#F4505E") }
+            return (d.unread ?? 0) > 0 ? Color(hex: "#5865F2") : Color(hex: "#22C55E")
+        }
+        if task.id == VenturoBotMonitor.pillId {
+            switch VenturoBotMonitor.shared.overall {
+            case .ok:      return Color(hex: "#22C55E")
+            case .busy:    return Color(hex: "#F5A524")
+            case .failing: return Color(hex: "#F4505E")
+            case .off:     return Color(hex: "#6B7079")
+            }
+        }
+        if task.id == SpotifyController.pillId {
+            let s = SpotifyController.shared
+            if s.automationDenied || !s.isInstalled { return Color(hex: "#F4505E") }
+            return s.playing ? Color(hex: SpotifyController.colorHex) : Color(hex: "#22C55E")
+        }
         if task.id == "integration_music" {
             if appState.musicAutomationDenied { return Color(hex: "#F4505E") }
             return appState.musicPlaying ? Color(hex: "#FA2D48") : Color(hex: "#22C55E")
@@ -1723,6 +1875,30 @@ struct IntegrationCardView: View {
 
     private var statusLabel: String {
         #if !APPSTORE
+        if task.id == DiscordService.pillId {
+            let d = DiscordService.shared
+            if !d.isInstalled { return "Discord not installed" }
+            if let me = d.myVoice { return "In voice · \(d.channel(me.channelId)?.name ?? "")" }
+            if let n = d.unread { return n == 0 ? "No unread" : "\(n) unread" }
+            return "Discord not running"
+        }
+        if task.id == VenturoBotMonitor.pillId {
+            let bot = VenturoBotMonitor.shared
+            if !bot.isInstalled { return "Venturo Bot not installed" }
+            switch bot.overall {
+            case .ok:      return "Connected"
+            case .busy:    return "Processing \(bot.currentVerb ?? "report")…"
+            case .failing: return "Needs attention"
+            case .off:     return "Not running"
+            }
+        }
+        if task.id == SpotifyController.pillId {
+            let s = SpotifyController.shared
+            if !s.isInstalled { return "Spotify not installed" }
+            if s.automationDenied { return "Automation not allowed" }
+            if s.playing { return "Playing · \(s.trackTitle ?? "Unknown")" }
+            return "Not playing"
+        }
         if task.id == "integration_music" {
             if appState.musicAutomationDenied { return "Automation not allowed" }
             if appState.musicPlaying { return "Playing · \(MusicController.shared.trackTitle ?? "Unknown")" }
@@ -1820,6 +1996,21 @@ struct IntegrationCardView: View {
         } else if musicIsActive {
             #if !APPSTORE
             MusicCardView()
+                .transition(.opacity)
+            #endif
+        } else if spotifyIsActive {
+            #if !APPSTORE
+            SpotifyCardView(state: appState)
+                .transition(.opacity)
+            #endif
+        } else if task.id == "integration_venturo" {
+            #if !APPSTORE
+            VenturoCardView(state: appState)
+                .transition(.opacity)
+            #endif
+        } else if task.id == "integration_discord" {
+            #if !APPSTORE
+            DiscordCardView(state: appState)
                 .transition(.opacity)
             #endif
         } else if agentSessionActive {
@@ -1927,6 +2118,19 @@ struct IntegrationCardView: View {
                             .foregroundColor(Color(hex: task.color).opacity(0.85))
                             .buttonStyle(.plain)
                         }
+                    } else if task.id == "integration_spotify" {
+                        #if !APPSTORE
+                        Button("Open Spotify") { SpotifyController.shared.openSpotify() }
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(Color(hex: task.color).opacity(0.85))
+                            .buttonStyle(.plain)
+                        if SpotifyController.shared.automationDenied {
+                            Button("Open Settings…") { MusicController.shared.openAutomationSettings() }
+                                .font(.system(size: 11))
+                                .foregroundColor(Color(hex: "#8E939C"))
+                                .buttonStyle(.plain)
+                        }
+                        #endif
                     } else if task.id == "integration_music" {
                         #if !APPSTORE
                         Button("Open Music") { MusicController.shared.openMusic() }
@@ -1985,7 +2189,10 @@ struct IntegrationCardView: View {
                     if !isConfigured
                        && task.id != "agent_cursor"
                        && task.id != "agent_codex"
-                       && task.id != "integration_music" {
+                       && task.id != "integration_music"
+                       && task.id != "integration_spotify"
+                       && task.id != "integration_venturo"
+                       && task.id != "integration_discord" {
                         Button("Settings…") {
                             let section: String
                             switch PillCatalog.definition(for: task.id)?.category {
@@ -3663,7 +3870,7 @@ struct AgentPillsView: View {
             LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(displayTasks) { task in
                     #if !APPSTORE
-                    if task.id == "integration_music" {
+                    if task.id == "integration_music" || task.id == SpotifyController.pillId {
                         MusicPill(task: task, state: state, swapping: $swapping) {
                             swapping = true
                             state.setFocus(task.id)
@@ -3766,8 +3973,12 @@ struct MusicPill: View {
     let onTap: () -> Void
     @State private var isHovered = false
 
-    private var isPlaying: Bool { AppState.shared.musicPlaying }
-    private var showControls: Bool { isHovered && MusicController.shared.trackTitle != nil }
+    @ObservedObject private var spotify = SpotifyController.shared
+    private var isSpotify: Bool { task.id == SpotifyController.pillId }
+    private var isPlaying: Bool { isSpotify ? spotify.playing : AppState.shared.musicPlaying }
+    private var showControls: Bool {
+        isHovered && (isSpotify ? spotify.trackTitle : MusicController.shared.trackTitle) != nil
+    }
 
     var body: some View {
         ZStack {
@@ -3813,10 +4024,10 @@ struct MusicPill: View {
                     Spacer()
                     HStack(spacing: 2) {
                         MusicControlButton(icon: isPlaying ? "pause.fill" : "play.fill", color: task.color) {
-                            MusicController.shared.playPause()
+                            isSpotify ? spotify.playPause() : MusicController.shared.playPause()
                         }
                         MusicControlButton(icon: "forward.fill", color: task.color) {
-                            MusicController.shared.nextTrack()
+                            isSpotify ? spotify.nextTrack() : MusicController.shared.nextTrack()
                         }
                     }
                     .padding(.trailing, 4)
@@ -4062,7 +4273,7 @@ struct WardrobeView: View {
             .padding(.horizontal, 10)
 
             // Grid
-            let allOutfits = Outfit.allCases.filter { $0 != .auto }
+            let allOutfits = Outfit.allCases.filter { ![.auto, .headset, .headsetMuted].contains($0) }
             let withAuto = [Outfit.auto] + allOutfits
             ScrollView(.vertical, showsIndicators: false) {
                 LazyVGrid(columns: columns, spacing: 5) {
@@ -4604,7 +4815,7 @@ struct SettingsIslandView: View {
     }
 
     private var apiConnected: Bool {
-        KeychainStore.shared.get("anthropic-api-key") != nil
+        AnthropicAuth.isConfigured
     }
 
     var body: some View {

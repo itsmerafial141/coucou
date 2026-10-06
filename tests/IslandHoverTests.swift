@@ -34,6 +34,20 @@ enum IslandHoverTests {
         wait(0.15)
         precondition(fsm.state == .home, "pinned/chat must stay open")
 
+        // Opened by a shortcut while the mouse is elsewhere: a leave doesn't fold it quickly…
+        let away = IslandStateMachine()
+        away.hoverLeaveCollapseDelay = 0.05
+        away.openedExternally()
+        precondition(away.state == .home)
+        away.mouseLeft(quick: true)
+        wait(0.15)
+        precondition(away.state == .home, "shortcut-opened island must not fold on a stray leave")
+        // …until the mouse has visited it once; then hover rules apply.
+        away.mouseEntered()
+        away.mouseLeft(quick: true)
+        wait(0.15)
+        precondition(away.state == .petit, "after a visit, leaving folds it")
+
         // Held open (pending approval) never folds.
         fsm.isHeldOpen = { true }
         fsm.mouseLeft(quick: true)

@@ -2,7 +2,8 @@ import Foundation
 
 enum Outfit: String, CaseIterable {
     case auto, none, partyHat, beanie, crown, sunglasses, roundGlasses,
-         bow, scarf, witchHat, pumpkin, santaHat, bunnyEars
+         bow, scarf, witchHat, pumpkin, santaHat, bunnyEars,
+         headset, headsetMuted   // internal: worn automatically while in a Discord voice channel, not in the Wardrobe
 
     var displayName: String {
         switch self {
@@ -19,6 +20,8 @@ enum Outfit: String, CaseIterable {
         case .pumpkin:      return "Pumpkin"
         case .santaHat:     return "Santa hat"
         case .bunnyEars:    return "Bunny ears"
+        case .headset:      return "Headset"
+        case .headsetMuted: return "Headset (muted)"
         }
     }
 

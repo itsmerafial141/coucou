@@ -20,17 +20,25 @@ final class FileDropNSView: NSView {
     // Pass all mouse events through — drag-drop uses NSDraggingDestination, not hitTest
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
 
+    // draggingSource is non-nil only for drags started inside this app (files pulled off the
+    // file stack): those are on their way out, not new files to drop on the island.
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        guard sender.draggingSource == nil else { return [] }
         onDragEntered?(sender.draggingLocation)
         return .copy
     }
     override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        guard sender.draggingSource == nil else { return [] }
         onDragUpdated?(sender.draggingLocation)
         return .copy
     }
-    override func draggingExited(_ sender: NSDraggingInfo?) { onDragExited?() }
+    override func draggingExited(_ sender: NSDraggingInfo?) {
+        guard sender?.draggingSource == nil else { return }
+        onDragExited?()
+    }
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        guard sender.draggingSource == nil else { return false }
         guard let urls = sender.draggingPasteboard.readObjects(
             forClasses: [NSURL.self],
             options: [.urlReadingFileURLsOnly: true]
@@ -47,6 +55,8 @@ enum FileDropHandler {
     static func handle(urls: [URL], state: AppState) async {
         guard let url = urls.first else { return }
         let name = url.lastPathComponent
+        state.addToShelf(urls)
+        state.droppedFiles = urls
 
         // Start animation immediately — do NOT block on file copy.
         // Use original URL first; swap to inbox copy once background copy finishes.

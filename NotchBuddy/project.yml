@@ -107,12 +107,23 @@ targets:
   NotchBuddy:
     type: application
     platform: macOS
+    dependencies:
+      # Root fan daemon, registered at runtime with SMAppService (GitHub build only).
+      - target: CoucouFanHelper
+        embed: true
+        copy:
+          destination: executables
     sources:
       - path: Sources
         type: group
         excludes:
           - "Phone/**"
           - "Widgets/**"
+      - path: Resources/LaunchDaemons/fr.louisraille.NotchBuddy.FanHelper.plist
+        buildPhase:
+          copyFiles:
+            destination: wrapper
+            subpath: Contents/Library/LaunchDaemons
       - path: Assets.xcassets
         buildPhase: resources
       - path: Resources/sounds
@@ -156,6 +167,25 @@ targets:
           CODE_SIGN_ENTITLEMENTS: Resources/CoucouReleaseCloud.entitlements
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: PHONE_LINK
           PROVISIONING_PROFILE_SPECIFIER: "Coucou Developer ID"
+
+  # Root launchd daemon that writes the SMC fan keys for the System tab. It only
+  # accepts Coucou signed by its own team and gives the fans back to macOS when
+  # Coucou disconnects. Embedded in Contents/MacOS of the GitHub build only.
+  CoucouFanHelper:
+    type: tool
+    platform: macOS
+    sources:
+      - path: FanHelper
+      - path: Sources/App/SMC.swift
+      - path: Sources/App/FanHelperProtocol.swift
+    settings:
+      base:
+        PRODUCT_NAME: CoucouFanHelper
+        PRODUCT_BUNDLE_IDENTIFIER: fr.louisraille.NotchBuddy.FanHelper
+        MACOSX_DEPLOYMENT_TARGET: "15.0"
+        SKIP_INSTALL: YES
+        CODE_SIGN_ENTITLEMENTS: ""
+        OTHER_CODE_SIGN_FLAGS: "--timestamp -i fr.louisraille.NotchBuddy.FanHelper"
 
   CoucouAppStore:
     type: application

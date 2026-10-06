@@ -5,6 +5,9 @@ import AppKit
 struct SettingsView: View {
     @ObservedObject private var state = AppState.shared
     @State private var apiKey: String = KeychainStore.shared.get("anthropic-api-key") ?? ""
+    @State private var oauthSignedIn = AnthropicOAuth.isSignedIn
+    @AppStorage("anthropicBackend") private var anthropicBackend = "claudeCode"
+    @State private var oauthBusy = false
 
     // Claude model — dynamic list fetched from the API, static fallback if unavailable
     private static let fallbackModels: [(id: String, label: String)] = [
@@ -178,10 +181,10 @@ struct SettingsView: View {
             #if !APPSTORE
             state.refreshPlanRelayState()
             #endif
-            guard fetchedModels.isEmpty,
-                  let key = KeychainStore.shared.get("anthropic-api-key"), !key.isEmpty else { return }
+            guard fetchedModels.isEmpty, AnthropicAuth.isConfigured else { return }
             Task {
-                let models = await ClaudeService.fetchModels(apiKey: key)
+                guard let auth = await AnthropicAuth.current() else { return }
+                let models = await ClaudeService.fetchModels(auth: auth)
                 guard !models.isEmpty else { return }
                 await MainActor.run {
                     fetchedModels = models
@@ -598,15 +601,72 @@ struct SettingsView: View {
     // MARK: - Chat section
 
     @ViewBuilder private var chatSection: some View {
-        GroupBox("Anthropic API") {
+        GroupBox("Anthropic") {
             VStack(alignment: .leading, spacing: 8) {
-                SecureField("API key (sk-ant-…)", text: $apiKey)
-                    .textFieldStyle(.roundedBorder)
-                Button("Save") {
-                    KeychainStore.shared.set("anthropic-api-key", value: apiKey)
-                    statusMessage = "✓ Key saved."
+                Picker("Chat with", selection: $anthropicBackend) {
+                    Text("Claude Code").tag("claudeCode")
+                    Text("Anthropic API").tag("api")
                 }
-                .buttonStyle(.borderedProminent)
+                .pickerStyle(.segmented)
+
+                if anthropicBackend == "claudeCode" {
+                    if ClaudeCodeChat.claudePath != nil {
+                        Text("✓ Uses your Claude Code CLI and its login. Runs in your home folder with all permissions granted (--dangerously-skip-permissions), so it can read, edit and run anything there.")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("❌ Claude Code CLI not found in ~/.local/bin or Homebrew. Install it, or switch to Anthropic API.")
+                            .font(.system(size: 11))
+                            .foregroundColor(.red)
+                    }
+                } else if oauthSignedIn {
+                    HStack {
+                        Text("✓ Signed in with your Anthropic Console account")
+                            .font(.system(size: 12))
+                        Spacer()
+                        Button("Sign out") {
+                            Task {
+                                await AnthropicOAuth.logout()
+                                oauthSignedIn = AnthropicOAuth.isSignedIn
+                                statusMessage = "Signed out."
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                } else {
+                    Button(oauthBusy ? "Waiting for the browser…" : "Sign in with browser") {
+                        oauthBusy = true
+                        statusMessage = "Finish signing in in your browser."
+                        Task {
+                            let error = await AnthropicOAuth.login()
+                            oauthBusy = false
+                            oauthSignedIn = AnthropicOAuth.isSignedIn
+                            statusMessage = error.map { "❌ \($0)" } ?? "✓ Signed in."
+                            fetchedModels = []
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(oauthBusy)
+                    Text("Opens the Anthropic Console in your browser (via the `ant` CLI). Usage is billed to your Console organization.")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                }
+
+                if anthropicBackend == "api" {
+                    DisclosureGroup("Use an API key instead") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            SecureField("API key (sk-ant-…)", text: $apiKey)
+                                .textFieldStyle(.roundedBorder)
+                            Button("Save") {
+                                KeychainStore.shared.set("anthropic-api-key", value: apiKey)
+                                statusMessage = oauthSignedIn ? "✓ Key saved (used only when signed out)." : "✓ Key saved."
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                        .padding(.top, 4)
+                    }
+                    .font(.system(size: 12))
+                }
 
                 Divider().padding(.vertical, 2)
 
@@ -852,6 +912,9 @@ struct SettingsView: View {
             }
             .padding(6)
         }
+        #if !APPSTORE
+        DiscordSettingsSection()
+        #endif
     }
 
     // MARK: - Actions
@@ -1238,9 +1301,12 @@ struct SettingsView: View {
                     let url = provider == .ollama ? state.ollamaServerURL : state.lmstudioServerURL
                     if url.isEmpty { return "Not connected" }
                 } else {
-                    let keyId = def.id == "ai_anthropic" ? "anthropic-api-key"
-                               : def.id == "ai_google"    ? "google-api-key" : "openai-api-key"
-                    if KeychainStore.shared.get(keyId) == nil { return "Key not configured" }
+                    if def.id == "ai_anthropic" {
+                        if !AnthropicAuth.isConfigured { return "Not signed in" }
+                    } else {
+                        let keyId = def.id == "ai_google" ? "google-api-key" : "openai-api-key"
+                        if KeychainStore.shared.get(keyId) == nil { return "Key not configured" }
+                    }
                 }
             }
             return nil

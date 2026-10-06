@@ -34,6 +34,10 @@ final class IslandStateMachine {
     /// home → petit delay once the mouse actually leaves the expanded island.
     var hoverLeaveCollapseDelay: TimeInterval = 0.35
 
+    /// Opened by a shortcut or an alert while the mouse was elsewhere. Leaving can't fold it
+    /// quickly until the mouse has visited the island once (then hover rules apply again).
+    private(set) var openedAway = false
+
     private var hoverOpenWork: DispatchWorkItem?
     private var petitHideWork: DispatchWorkItem?
     private var homeCollapseWork: DispatchWorkItem?
@@ -66,6 +70,7 @@ final class IslandStateMachine {
         case .home:
             homeCollapseWork?.cancel()
             homeCollapseWork = nil
+            openedAway = false
         case .coucou:
             // Mouse hovering during greeting — cancel short auto-collapse, extend to hover delay
             scheduleGreetCollapse(delay: greetHoverCollapseDelay)
@@ -84,7 +89,7 @@ final class IslandStateMachine {
             schedulePetitHide()
         case .home:
             if isHeldOpen?() != true {
-                scheduleHomeCollapse(delay: quick ? hoverLeaveCollapseDelay : homeToPetitDelay)
+                scheduleHomeCollapse(delay: quick && !openedAway ? hoverLeaveCollapseDelay : homeToPetitDelay)
             }
         case .coucou:
             if isHeldOpen?() != true {
@@ -118,6 +123,7 @@ final class IslandStateMachine {
     /// next hover/mouseLeft behave correctly instead of collapsing the island.
     func openedExternally() {
         cancelTimers()
+        openedAway = true
         guard state != .home && state != .coucou else { return }
         state = .home
     }
@@ -201,6 +207,7 @@ final class IslandStateMachine {
 
     private func transition(to new: State) {
         guard new != state else { return }
+        if state == .home { openedAway = false }
         let old = state
         state = new
         onTransition?(old, new)

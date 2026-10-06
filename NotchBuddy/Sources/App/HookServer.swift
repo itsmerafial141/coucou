@@ -327,6 +327,8 @@ final class HookServer: @unchecked Sendable {
         let sessionId = payload["session_id"] as? String
                      ?? payload["conversation_id"] as? String
                      ?? "unknown"
+        // Notch chat sessions already show their progress in the chat bubble.
+        if ClaudeCodeChat.ownSessions.contains(sessionId) { return }
         let cwd = payload["cwd"] as? String ?? ""
         let rawName = URL(fileURLWithPath: cwd).lastPathComponent
         let projectName = aliasProjectName(rawName.isEmpty ? "Session" : rawName)

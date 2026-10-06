@@ -17,6 +17,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = KeychainStore.shared
         NSApp.setActivationPolicy(.accessory)
         setupMenuBarItem()
+        MenuBarTray.shared.start()
+        ClipboardStore.shared.start()
+        #if !APPSTORE
+        SystemMonitor.shared.start()
+        #endif
         setupIsland()
         #if PHONE_LINK
         CloudProbe.shared.startIfEnabled()
@@ -84,7 +89,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Centres the window horizontally and keeps its title bar clear of the island panel
     /// (320 pt tall at the top of the notch screen), shrinking it to fit if needed.
     private func placeBelowIsland(_ win: NSWindow) {
-        let screen = IslandWindowController.notchScreen() ?? NSScreen.main ?? win.screen
+        let screen = IslandWindowController.islandScreen() ?? win.screen
         guard let screen else { win.center(); return }
         let visible = screen.visibleFrame
         let islandBottom = screen.frame.maxY - 320 - 12   // island panel height + margin
@@ -118,6 +123,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         #if !APPSTORE
         _ = MusicController.shared
+        _ = SpotifyController.shared
+        _ = VenturoBotMonitor.shared
+        _ = DiscordService.shared
         #endif
     }
 }

@@ -115,10 +115,10 @@ final class ClaudeService {
 
     /// Fetches available models from the Anthropic API in the order the API returns them
     /// (newest first). Returns an empty array on any error — callers fall back to a static list.
-    static func fetchModels(apiKey: String) async -> [(id: String, label: String)] {
+    static func fetchModels(auth: AnthropicAuth) async -> [(id: String, label: String)] {
         guard let url = URL(string: "https://api.anthropic.com/v1/models?limit=100") else { return [] }
         var req = URLRequest(url: url, timeoutInterval: 10)
-        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        auth.apply(to: &req)
         req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         guard let (data, response) = try? await URLSession.shared.data(for: req),
               (response as? HTTPURLResponse)?.statusCode == 200,
@@ -181,12 +181,11 @@ final class ClaudeService {
         return m.isEmpty ? AppState.defaultClaudeModel : m
     }
 
-    var apiKey: String? { KeychainStore.shared.get("anthropic-api-key") }
-
     // Multi-turn conversation messages (for API)
     private var conversationMessages: [[String: Any]] = []
 
     func clearConversation() {
+        ClaudeCodeChat.shared.reset()
         conversationMessages = []
     }
 
@@ -221,8 +220,12 @@ final class ClaudeService {
             await chatOpenAICompatible(query: query, context: context, state: state)
             return
         }
-        guard let key = apiKey, !key.isEmpty else {
-            await showError("API key missing. Open settings.", state: state)
+        if ClaudeCodeChat.isEnabled {
+            await ClaudeCodeChat.shared.chat(query: query, context: context, state: state)
+            return
+        }
+        guard let key = await AnthropicAuth.current() else {
+            await showError("Not connected to Anthropic. Sign in from Settings.", state: state)
             return
         }
 
@@ -237,10 +240,12 @@ final class ClaudeService {
                 if let url = url { text += ", URL: \(url)" }
                 userContent.append(["type": "text", "text": text])
             case .file(let name, let fileURL):
-                if let fileURL = fileURL, let block = readFileAsBlock(url: fileURL) {
-                    userContent.append(block)
+                let files = state.contextFiles(fileURL)
+                for url in files {
+                    if let block = readFileAsBlock(url: url) { userContent.append(block) }
                 }
-                userContent.append(["type": "text", "text": "File: \(name)"])
+                let names = files.count > 1 ? files.map(\.lastPathComponent).joined(separator: ", ") : name
+                userContent.append(["type": "text", "text": "File: \(names)"])
             }
         }
         userContent.append(["type": "text", "text": query])
@@ -446,8 +451,8 @@ final class ClaudeService {
     // MARK: - Structured search (M8 — window attach + web search)
 
     func search(query: String, context: PromptContext?, state: AppState) async {
-        guard let key = apiKey, !key.isEmpty else {
-            await showError("Anthropic API key missing. Open settings to configure it.", state: state)
+        guard let key = await AnthropicAuth.current() else {
+            await showError("Not connected to Anthropic. Sign in from Settings.", state: state)
             return
         }
 
@@ -496,13 +501,12 @@ final class ClaudeService {
 
     // MARK: - API call
 
-    private func callAPI(body: [String: Any], key: String, beta: String? = nil) async throws -> Data {
+    private func callAPI(body: [String: Any], key: AnthropicAuth, beta: String? = nil) async throws -> Data {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
-        request.setValue(key, forHTTPHeaderField: "x-api-key")
+        key.apply(to: &request, beta: beta)
         request.setValue(anthropicVersion, forHTTPHeaderField: "anthropic-version")
         request.setValue("application/json", forHTTPHeaderField: "content-type")
-        if let beta { request.setValue(beta, forHTTPHeaderField: "anthropic-beta") }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         request.timeoutInterval = 45
 

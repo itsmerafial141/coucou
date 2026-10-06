@@ -6,12 +6,15 @@ import SwiftUI
 final class IslandWindowController: NSWindowController {
 
     private var islandPanel: IslandPanel!
+    /// NSApp.delegate is SwiftUI's adaptor, not AppDelegate, so reach the island through this.
+    private(set) static weak var current: IslandWindowController?
     private var state: AppState { AppState.shared }
 
     // State machine (replaces all hover/absence/auto-close timers)
     let fsm = IslandStateMachine()
 
     private var wasInIsland = false
+    private var leaveDeferredByDrag = false
     private var frameTimer: Timer?
     private var keyMonitor: Any?
     private var viewSubscription: AnyCancellable?
@@ -46,6 +49,7 @@ final class IslandWindowController: NSWindowController {
     private var notchW: CGFloat = IslandConst.notchWidth
     private var notchH: CGFloat = IslandConst.notchHeight
     private var hasNotch = true
+    private var isMovingScreen = false
 
     // Island-local key monitor (active only when island is key window)
     private var localKeyMonitor: Any?
@@ -70,6 +74,7 @@ final class IslandWindowController: NSWindowController {
 
         self.init(window: panel)
         self.islandPanel = panel
+        Self.current = self
         self.notchW = nW
         self.notchH = nH
         self.hasNotch = geometry.hasNotch
@@ -140,8 +145,15 @@ final class IslandWindowController: NSWindowController {
         container.addSubview(dropView)   // z-top: drag only (hitTest→nil, transparent to mouse)
         panel.contentView = container
 
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.moveToMouseScreen(force: true) }
+        }
+
         startPolling()
         startKeyMonitor()
+        startClickOutsideMonitor()
         startLocalKeyMonitor()
         startHotKeys()
         wireFSM()
@@ -221,6 +233,7 @@ final class IslandWindowController: NSWindowController {
         guard let panel = window as? IslandPanel else { return }
 
         let mouse = NSEvent.mouseLocation
+        moveToMouseScreen()
 
         // Convert mouse to panel-local coords (macOS: origin bottom-left)
         let pf = panel.frame
@@ -244,8 +257,9 @@ final class IslandWindowController: NSWindowController {
         }
 
         // Mouse in screen coords (Y flipped, origin top-left) for Bot look-at
-        let screenH = panel.screen?.frame.height ?? NSScreen.main!.frame.height
-        let newPos = CGPoint(x: mouse.x - (panel.screen?.frame.minX ?? 0), y: screenH - mouse.y)
+        // Local to the island's screen: a secondary screen has non-zero minX / minY.
+        let sf = panel.screen?.frame ?? NSScreen.main!.frame
+        let newPos = CGPoint(x: mouse.x - sf.minX, y: sf.maxY - mouse.y)
         let cur = AppState.shared.mousePosition
         if abs(newPos.x - cur.x) > 1 || abs(newPos.y - cur.y) > 1 {
             AppState.shared.mousePosition = newPos
@@ -264,8 +278,18 @@ final class IslandWindowController: NSWindowController {
             fsm.mouseEntered()
         }
         if !inIsland && wasInIsland {
-            // Fold right away on leave, except when pinned or typing in the chat.
-            fsm.mouseLeft(quick: !state.isPinned && state.view != .prompt)
+            if NSEvent.pressedMouseButtons != 0 {
+                // A drag left the island (e.g. a file pulled off the shelf): folding now would
+                // drop the drag source, so wait until the button is released.
+                leaveDeferredByDrag = true
+            } else {
+                // Fold right away on leave, except when pinned or typing in the chat.
+                fsm.mouseLeft(quick: !state.isPinned && state.view != .prompt)
+            }
+        }
+        if leaveDeferredByDrag && NSEvent.pressedMouseButtons == 0 {
+            leaveDeferredByDrag = false
+            if !inIsland { fsm.mouseLeft(quick: !state.isPinned && state.view != .prompt) }
         }
         wasInIsland = inIsland
 
@@ -361,6 +385,19 @@ final class IslandWindowController: NSWindowController {
         state.lastActivity = .now
     }
 
+    /// Opened by a shortcut (or an alert) rather than by the mouse: keep the FSM in step so
+    /// hover timers can't fold it or switch its view, and don't fold just because the mouse
+    /// is elsewhere. It closes on the shortcut again, Esc, a click outside, or the 15 s timer.
+    func openExplicitly(to view: IslandView) {
+        fsm.openedExternally()
+        expand(to: view)
+        if wasInIsland {
+            fsm.mouseEntered()                  // mouse is already on it → normal hover rules
+        } else if ![.prompt, .approval, .question].contains(view) {
+            fsm.mouseLeft()                     // 15 s fallback, never while chatting or answering
+        }
+    }
+
     func collapse() {
         guard fsm.isHeldOpen?() != true else { return }
         state.isPinned = false
@@ -386,20 +423,20 @@ final class IslandWindowController: NSWindowController {
                 collapse()
             } else {
                 islandPanel.makeKey()
-                expand(to: defaultView())
+                openExplicitly(to: defaultView())
             }
 
         case .openChat:
             islandPanel.makeKey()
-            expand(to: .prompt)
+            openExplicitly(to: .prompt)
 
         case .goToAlert:
             if state.pendingApproval != nil {
                 islandPanel.makeKey()
-                expand(to: .approval)
+                openExplicitly(to: .approval)
             } else if state.pendingQuestion != nil {
                 islandPanel.makeKey()
-                expand(to: .question)
+                openExplicitly(to: .question)
             } else {
                 NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.annoyed)
                 SoundEngine.shared.play("error")
@@ -436,7 +473,15 @@ final class IslandWindowController: NSWindowController {
                 collapse()
             } else {
                 islandPanel.makeKey()
-                expand(to: .wardrobe)
+                openExplicitly(to: .wardrobe)
+            }
+
+        case .openClipboard:
+            if state.mode == .expanded && state.view == .clipboard {
+                collapse()
+            } else {
+                islandPanel.makeKey()
+                openExplicitly(to: .clipboard)
             }
         }
     }
@@ -454,6 +499,13 @@ final class IslandWindowController: NSWindowController {
     private func handleIslandKey(_ event: NSEvent) -> Bool {
         let raw = event.modifierFlags.intersection([.command, .control, .option, .shift])
         let cmd = raw == .command
+
+        // 1–9 in the Clipboard tab — copy the nth card (unless typing in the search field)
+        if raw.isEmpty && state.view == .clipboard && !(islandPanel.firstResponder is NSText),
+           let n = Int(event.charactersIgnoringModifiers ?? ""), (1...9).contains(n) {
+            NotificationCenter.default.post(name: .clipboardPick, object: n)
+            return true
+        }
 
         // ⌘→ — next pill
         if cmd && event.keyCode == 124 { cyclePill(by: +1); return true }
@@ -497,7 +549,10 @@ final class IslandWindowController: NSWindowController {
         }
         // ⎋ Escape — focused views (.onExitCommand) have first crack; fall back to collapse
         if event.keyCode == 53 && raw.isEmpty {
-            let consumed = NSApp.sendAction(Selector(("cancelOperation:")), to: nil, from: nil)
+            // The chat box's text field always "accepts" cancelOperation: (and does nothing),
+            // which used to swallow Esc in the chat. The chat has no Esc action of its own.
+            let consumed = state.view != .prompt
+                && NSApp.sendAction(Selector(("cancelOperation:")), to: nil, from: nil)
             if !consumed && state.mode == .expanded && !state.isPinned {
                 collapse()
             }
@@ -573,6 +628,17 @@ final class IslandWindowController: NSWindowController {
 
     // MARK: - Keyboard (Escape closes)
 
+    private func startClickOutsideMonitor() {
+        // Global monitors only see clicks in other apps, i.e. outside the island.
+        NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, self.state.mode == .expanded, !self.state.isPinned,
+                      !self.state.mochiOnDesktop else { return }
+                self.collapse()   // no-op while an approval holds it open
+            }
+        }
+    }
+
     private func startKeyMonitor() {
         keyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             Task { @MainActor in
@@ -588,8 +654,7 @@ final class IslandWindowController: NSWindowController {
         // Hook server expand requests (alerts only)
         NotificationCenter.default.addObserver(forName: .hookExpand, object: nil, queue: .main) { [weak self] note in
             guard let self, let view = note.object as? IslandView else { return }
-            self.fsm.openedExternally()
-            self.expand(to: view)
+            self.openExplicitly(to: view)
         }
 
         // Hook server compact reveal (non-alert work events: session start, tool use, etc.)
@@ -888,7 +953,8 @@ final class IslandWindowController: NSWindowController {
     }
 
     private func windowBoundsAtScreenPoint(_ screenPoint: NSPoint) -> (CGRect, pid_t)? {
-        guard let screen = window?.screen ?? NSScreen.main else { return nil }
+        // CG global coords flip around the primary screen (screens[0]), whatever screen we're on.
+        guard let screen = NSScreen.screens.first else { return nil }
         let screenMaxY = screen.frame.maxY
         let cgPoint = CGPoint(x: screenPoint.x, y: screenMaxY - screenPoint.y)
 
@@ -915,9 +981,8 @@ final class IslandWindowController: NSWindowController {
     // MARK: - Window context at screen point (for drag-attach)
 
     func windowContextAtPoint(_ screenPoint: NSPoint) -> PromptContext? {
-        let screen = window?.screen ?? NSScreen.main
-        // CGWindowList uses top-left origin; NSEvent.mouseLocation uses bottom-left
-        let screenMaxY = screen?.frame.maxY ?? NSScreen.main!.frame.maxY
+        // CGWindowList uses top-left origin around the primary screen; NSEvent.mouseLocation bottom-left
+        let screenMaxY = NSScreen.screens.first?.frame.maxY ?? NSScreen.main!.frame.maxY
         let cgPoint = CGPoint(x: screenPoint.x, y: screenMaxY - screenPoint.y)
 
         guard let windowList = CGWindowListCopyWindowInfo(
@@ -1039,6 +1104,79 @@ final class IslandWindowController: NSWindowController {
         return dx*dx + dy*dy <= radius * radius
     }
 
+    // MARK: - Multi-screen: the island follows the screen under the cursor
+
+    private func moveToMouseScreen(force: Bool = false) {
+        guard let panel = islandPanel, !isMovingScreen else { return }
+        let mouse = NSEvent.mouseLocation
+        guard let target = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) })
+        else { return }
+        let current = NSScreen.screens.first { $0.frame.contains(NSPoint(x: panel.frame.midX, y: panel.frame.maxY - 1)) }
+        if !force {
+            // Never pull the island away while it is open or the user is dragging something.
+            guard target != current, state.mode != .expanded, !inAttachDrag,
+                  attachDragStart == nil, NSEvent.pressedMouseButtons == 0 else { return }
+        }
+
+        let geometry = Self.screenGeometry(for: target)
+        notchW = geometry.width
+        notchH = geometry.height
+        hasNotch = geometry.hasNotch
+        panel.notchWidth = notchW
+        panel.notchHeight = notchH
+        AppState.shared.notchWidth = notchW
+        AppState.shared.notchHeight = notchH
+        AppState.shared.hasNotch = hasNotch
+
+        let sf = target.frame
+        let dest = NSRect(origin: NSPoint(x: sf.midX - panel.frame.width / 2,
+                                          y: sf.maxY - panel.frame.height),
+                          size: panel.frame.size)
+        guard current != nil, target != current else {   // same screen re-laid out, or panel off-screen
+            panel.setFrame(dest, display: true)
+            return
+        }
+
+        // Hero move: glide along the top edge to the new screen, dipping the opacity so the
+        // hop across the display boundary reads as one motion. The shape morphs meanwhile
+        // (notch ↔ resting bar) through IslandRootView's onChange of the notch size.
+        isMovingScreen = true
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.2
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            panel.animator().alphaValue = 0.25
+        }, completionHandler: {
+            NSAnimationContext.runAnimationGroup({ ctx in
+                ctx.duration = 0.25
+                ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                panel.animator().alphaValue = 1
+            })
+        })
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.45
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            panel.animator().setFrame(dest, display: true)
+        }, completionHandler: { [weak self] in
+            Task { @MainActor in
+                panel.alphaValue = 1
+                self?.isMovingScreen = false
+            }
+        })
+    }
+
+    /// Bottom-centre of the island in screen coordinates (Menu Bar tab menus open here).
+    func islandBottomCenter() -> NSPoint? {
+        guard let panel = islandPanel else { return nil }
+        let f = panel.currentIslandFrame(nw: notchW, nh: notchH)
+        return NSPoint(x: panel.frame.minX + f.midX, y: panel.frame.minY + f.minY)
+    }
+
+    /// The screen the island currently sits on (falls back to the notch screen, then main).
+    static func islandScreen() -> NSScreen? {
+        current?.window?.screen
+            ?? notchScreen() ?? NSScreen.main
+    }
+
     // MARK: - Notch detection (static)
 
     static func notchScreen() -> NSScreen? {
@@ -1116,6 +1254,7 @@ struct GhostBotView: View {
 
 extension Notification.Name {
     static let triggerEmote     = Notification.Name("notchBuddy.triggerEmote")
+    static let clipboardPick    = Notification.Name("notchBuddy.clipboardPick")
     static let triggerSlap      = Notification.Name("notchBuddy.triggerSlap")
     static let botDizzy         = Notification.Name("notchBuddy.botDizzy")
     static let botGreet         = Notification.Name("notchBuddy.botGreet")

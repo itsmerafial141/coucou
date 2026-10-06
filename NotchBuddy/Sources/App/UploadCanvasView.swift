@@ -80,6 +80,15 @@ struct UploadCanvasView: View {
             .buttonStyle(.plain)
             .frame(width: 120, height: 26)
             .position(x: 290 + 60, y: 113 + 13)   // center = (350, 126)
+
+            // The file itself, draggable straight out to another window (also kept on the shelf).
+            // The dropped files as a pile: drag = all of them, click = pick one.
+            let files = state.droppedFiles.isEmpty ? [state.droppedFile?.url].compactMap { $0 } : state.droppedFiles
+            if !files.isEmpty {
+                FileStackView(files: files, onDropped: { state.clearDelivered($0) })
+                    .frame(width: 200, alignment: .trailing)
+                    .position(x: 516, y: 104)   // right of the buttons (x 416…616), card center
+            }
         }
         .opacity(f.chooseAlpha)
         .allowsHitTesting(f.chooseAlpha > 0.5)
@@ -188,8 +197,9 @@ struct UploadCanvasView: View {
         let barLen = (x1-x0) * f.barReveal
 
         // Filename label
-        let name = state.droppedFile?.name ?? "file"
-        let label = Text("Uploading \(name)")
+        let names = state.droppedFiles.count > 1
+            ? state.droppedFiles.map(\.lastPathComponent) : [state.droppedFile?.name ?? "file"]
+        let label = Text(FileStackLogic.uploadLabel(names, progress: f.progress))
             .font(.system(size:12.5, weight:.medium))
             .foregroundColor(Color(hex:"#A9ADB5"))
         pCtx.draw(label, at: CGPoint(x: x0, y: by-30), anchor: .leading)
@@ -263,12 +273,13 @@ struct UploadCanvasView: View {
         cCtx.concatenate(CGAffineTransform(translationX: 0, y: CGFloat((1-f.chooseAlpha)*4)))
 
         let name = state.droppedFile?.name ?? "file"
-        let titleText = Text("\(name) is ready.")
+        let count = state.droppedFiles.count
+        let titleText = Text(count > 1 ? "\(count) files are ready." : "\(name) is ready.")
             .font(.system(size:14, weight:.semibold))
             .foregroundColor(Color(hex:"#F5F6F8"))
         cCtx.draw(titleText, at: CGPoint(x:114, y:80), anchor: .leading)
 
-        let subText = Text("What do you want to do with it?")
+        let subText = Text(count > 1 ? "What do you want to do with them?" : "What do you want to do with it?")
             .font(.system(size:12.5))
             .foregroundColor(Color(hex:"#9398A1"))
         cCtx.draw(subText, at: CGPoint(x:114, y:100), anchor: .leading)
@@ -276,7 +287,7 @@ struct UploadCanvasView: View {
         // Primary button (white fill)
         cCtx.fill(roundedRect(CGRect(x:114,y:113,width:168,height:26), r:13),
                   with: .color(Color(hex:"#F5F6F8")))
-        let btn1 = Text("Ask a question about it")
+        let btn1 = Text(count > 1 ? "Ask about them" : "Ask a question about it")
             .font(.system(size:12.5, weight:.medium))
             .foregroundColor(Color(red:0.043,green:0.047,blue:0.055))
         cCtx.draw(btn1, at: CGPoint(x:198, y:126), anchor: .center)

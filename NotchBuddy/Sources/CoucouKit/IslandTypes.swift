@@ -12,6 +12,7 @@ enum IslandView: String, CaseIterable {
     case overview, empty, approval, question, error, finished
     case confused, upload, uploading, choose, mail, prompt
     case searching, result, note, settings, greeting, wardrobe
+    case menuBar, spotify, venturo, discord, clipboard, system
 }
 
 // MARK: - Bot State
@@ -189,6 +190,17 @@ enum IslandConst {
         // Greeting: bot drawn by GreetingCanvasView; no BotPlacement needed
         .greeting:  ViewLayout(height: 150, botX: 320, botY: 90,  botDiameter: 0,  agentMode: .none),
         .wardrobe:  ViewLayout(height: 160, botX: 68,  botY: nil, botDiameter: 58, agentMode: .none),
+        .menuBar:   ViewLayout(height: 160, botX: 54,  botY: nil, botDiameter: 46, agentMode: .none),
+        // Clipboard: Mochi centred in the left gutter of the tall card (see ClipboardView)
+        // System stats: Mochi in the 116pt left gutter (see SystemStatsView)
+        .system:    ViewLayout(height: 228, botX: 64,  botY: 130, botDiameter: 54, agentMode: .none),
+        .clipboard: ViewLayout(height: 196, botX: 54,  botY: 114, botDiameter: 46, agentMode: .none),
+        // Spotify player: Mochi sits on the middle of the 124pt cover (see SpotifyPlayerView)
+        .spotify:   ViewLayout(height: 196, botX: 82,  botY: 114, botDiameter: 54, agentMode: .none),
+        // Venturo Bot detail: Mochi in the 116pt left gutter (see VenturoDetailView)
+        .venturo:   ViewLayout(height: 220, botX: 64,  botY: 126, botDiameter: 54, agentMode: .none),
+        // Discord feed / voice: Mochi in the 116pt left gutter (see DiscordFullView)
+        .discord:   ViewLayout(height: 230, botX: 64,  botY: 131, botDiameter: 54, agentMode: .none),
     ]
 
     // Project colors — keyed by lowercase display name or slug

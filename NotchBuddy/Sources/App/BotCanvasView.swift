@@ -40,21 +40,42 @@ struct BotCanvasView: View {
                         ? cgColorFromHex(state.focusTask!.color)
                         : nil
                 }
+                // Mac too hot (System tab threshold): red, tired Mochi.
+                if SystemMonitor.shared.hot && state.view != .wardrobe {
+                    engine.bodyColor = cgColorFromHex("#F4505E")
+                    engine.eyeOverride = .tired
+                    engine.eyeOverrideUntil = CACurrentMediaTime() + 0.15
+                }
                 #else
                 engine.bodyColor = (state.focusTask?.isIntegration == true)
                     ? cgColorFromHex(state.focusTask!.color)
                     : nil
                 #endif
 
+                // Headset whenever Mochi is the Discord Mochi (Discord focused), while in a voice channel.
+                #if !APPSTORE
+                let voiceShown = state.voiceOutfit != nil && !(state.mode == .expanded && state.view == .wardrobe)
+                    && (state.focusId == DiscordService.pillId || (state.mode == .expanded && state.view == .discord))
+                #else
+                let voiceShown = false
+                #endif
                 // Compute shouldDance per-frame (no observer lag)
                 let dancing: Bool = {
                     #if !APPSTORE
-                    guard AppState.shared.musicPlaying else { return false }
-                    guard AppState.shared.activeIntegrations.contains("integration_music") else { return false }
+                    let active = AppState.shared.activeIntegrations
+                    let appleMusic = AppState.shared.musicPlaying && active.contains("integration_music")
+                    let spotify = SpotifyController.shared.playing && active.contains(SpotifyController.pillId)
+                    // Live (unmuted) in a Discord voice channel: same dance, on the Discord card.
+                    if voiceShown && state.voiceOutfit == .headset { return true }
+                    guard appleMusic || spotify else { return false }
                     let allowed: Set<BotState> = [.idle, .working, .thinking, .searching, .finished]
                     guard allowed.contains(state.effectiveState) else { return false }
                     if state.mode == .compact { return true }
-                    return state.mode == .expanded && state.view == .overview && state.focusId == "integration_music"
+                    guard state.mode == .expanded else { return false }
+                    if spotify && state.view == .spotify { return true }
+                    return state.view == .overview
+                        && ((appleMusic && state.focusId == "integration_music")
+                            || (spotify && state.focusId == SpotifyController.pillId))
                     #else
                     return false
                     #endif
@@ -63,8 +84,13 @@ struct BotCanvasView: View {
                 let isWardrobe = state.mode == .expanded && state.view == .wardrobe
                 let isFocusMain = state.focusId == state.mainPillId || state.focusId == nil
                 let showOutfit = isFocusMain || state.mode != .expanded || isWardrobe
-                engine.setOutfit(showOutfit ? state.resolvedOutfit : .none,
+                engine.setOutfit(voiceShown ? state.voiceOutfit! : showOutfit ? state.resolvedOutfit : .none,
                                  animated: state.view != .wardrobe)
+                // Muted in voice: eyes closed (refreshed every frame, lapses on unmute).
+                if voiceShown && state.voiceOutfit == .headsetMuted {
+                    engine.eyeOverride = .closed
+                    engine.eyeOverrideUntil = CACurrentMediaTime() + 0.15
+                }
 
                 engine.update(dt: dt)
                 var ctx = context
@@ -153,7 +179,8 @@ struct BotCanvasView: View {
         if let origin = lookOriginOverride {
             return tanh((state.mousePosition.x - origin.x) / 260)
         }
-        let screen = NSScreen.main ?? NSScreen.screens[0]
+        // mousePosition is local to the island's screen (see pollFrame), so is the bot.
+        let screenW = IslandWindowController.islandScreen()?.frame.width ?? 0
         let (islandW, islandH) = islandSize(mode: state.mode, view: state.view,
                                              progress: state.uploadProgress,
                                              nw: state.notchWidth, nh: state.notchHeight)
@@ -161,7 +188,7 @@ struct BotCanvasView: View {
                                             islandW: islandW, islandH: islandH,
                                             uploadProgress: state.uploadProgress)
         // Island is centered on screen; bot is at botCx within island coords
-        let botScreenX = screen.frame.midX - islandW / 2 + botCx
+        let botScreenX = screenW / 2 - islandW / 2 + botCx
         return tanh((state.mousePosition.x - botScreenX) / 260)
     }
 

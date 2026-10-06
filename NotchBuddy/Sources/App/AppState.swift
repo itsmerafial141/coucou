@@ -18,10 +18,11 @@ final class AppState: ObservableObject {
     // Bot state override
     @Published var stateOverride: BotState? = nil
 
-    // Real notch dimensions (set by IslandWindowController on launch)
-    var notchWidth:  CGFloat = IslandConst.notchWidth
-    var notchHeight: CGFloat = IslandConst.notchHeight
-    var hasNotch = true
+    // Real notch dimensions (set by IslandWindowController on launch and on screen change)
+    // Published: they change when the island moves to another screen.
+    @Published var notchWidth:  CGFloat = IslandConst.notchWidth
+    @Published var notchHeight: CGFloat = IslandConst.notchHeight
+    @Published var hasNotch = true
 
     // Last app active before NotchBuddy (for window context capture)
     var lastExternalApp: NSRunningApplication? = nil
@@ -69,6 +70,8 @@ final class AppState: ObservableObject {
     var wardrobePreviewOutfit: Outfit? = nil
     // Per-day seasonal cache — avoids recomputing Easter and date math on every frame
     private var _seasonalCache: (dayOfYear: Int, year: Int, outfit: Outfit)?
+    // Transient: worn while the user sits in a Discord voice channel (set by DiscordService)
+    var voiceOutfit: Outfit? = nil
     var resolvedOutfit: Outfit {
         if let preview = wardrobePreviewOutfit { return preview }
         guard mochiOutfitSelection == .auto else { return mochiOutfitSelection }
@@ -161,7 +164,8 @@ final class AppState: ObservableObject {
             return
         }
         // Remote providers: require API key
-        guard let apiKey = KeychainStore.shared.get(provider.keychainKey), !apiKey.isEmpty else {
+        let apiKey = KeychainStore.shared.get(provider.keychainKey) ?? ""
+        guard provider == .anthropic ? AnthropicAuth.isConfigured : !apiKey.isEmpty else {
             providerModelFetchError[provider] = "No API key — add it in Settings."
             return
         }
@@ -170,7 +174,9 @@ final class AppState: ObservableObject {
         Task {
             let models: [(id: String, label: String)]
             switch provider {
-            case .anthropic: models = await ClaudeService.fetchModels(apiKey: apiKey)
+            case .anthropic:
+                if let auth = await AnthropicAuth.current() { models = await ClaudeService.fetchModels(auth: auth) }
+                else { models = [] }
             case .google:    models = await ClaudeService.fetchGoogleModels(apiKey: apiKey)
             case .openai:    models = await ClaudeService.fetchOpenAIModels(apiKey: apiKey)
             case .ollama, .lmstudio: models = []  // handled above
@@ -223,6 +229,40 @@ final class AppState: ObservableObject {
 
     // Dropped file (set during upload flow)
     @Published var droppedFile: DroppedFile? = nil
+
+    // File shelf: everything dropped on the island stays here (original locations) and can be
+    // dragged out again into any window, like Dropzone's drop bar. Kept across launches.
+    @Published var shelf: [URL] = (UserDefaults.standard.stringArray(forKey: "fileShelf") ?? [])
+        .map { URL(fileURLWithPath: $0) } {
+        didSet { UserDefaults.standard.set(shelf.map(\.path), forKey: "fileShelf") }
+    }
+
+    /// Every file of the last drop (original locations). `droppedFile` stays the first one.
+    @Published var droppedFiles: [URL] = []
+
+    /// Files the chat/mail should use for a `.file` context: the whole last drop when it had
+    /// several files, otherwise just that one file.
+    func contextFiles(_ fileURL: URL?) -> [URL] {
+        droppedFiles.count > 1 ? droppedFiles : [fileURL].compactMap { $0 }
+    }
+
+    /// Files dragged out of the "ready" stack and accepted elsewhere leave the stack and the shelf.
+    /// When none are left, the ready screen is done: go back to the drop zone.
+    func clearDelivered(_ urls: [URL]) {
+        shelf.removeAll { urls.contains($0) }
+        let firstWasDelivered = droppedFile.map { f in urls.contains { $0.lastPathComponent == f.name } } ?? false
+        droppedFiles.removeAll { urls.contains($0) }
+        if droppedFiles.isEmpty && (firstWasDelivered || droppedFile == nil) {
+            droppedFile = nil
+            UploadSequenceEngine.shared.deactivate()
+            view = .upload
+        }
+    }
+
+    func addToShelf(_ urls: [URL]) {
+        let new = urls.filter { $0.isFileURL && !shelf.contains($0) }
+        shelf.append(contentsOf: new)
+    }
 
     // Short note message (shown in NoteView)
     @Published var noteMessage: String? = nil

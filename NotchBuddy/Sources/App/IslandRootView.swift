@@ -107,12 +107,19 @@ struct IslandContainer: View {
             CountdownBar(state: state, islandW: islandWidth)
 
             Group {
+                #if !APPSTORE
+                if state.mode == .compact {
+                    CompactRightEar(state: state, islandWidth: islandWidth, islandHeight: islandHeight)
+                        .transition(.opacity)
+                }
+                #else
                 if state.mode == .compact {
                     CompactMiniGrid(state: state)
                         .scaleEffect(IslandRestingLayout(width: islandWidth, height: islandHeight).miniGridScale)
                         .position(x: islandWidth - 40, y: islandHeight / 2)
                         .transition(.opacity)
                 }
+                #endif
             }
             .animation(.easeInOut(duration: 0.25), value: state.mode == .compact)
         }
@@ -145,6 +152,16 @@ struct IslandContainer: View {
             withAnimation(openSpring) {
                 islandWidth  = w
                 islandHeight = newView == .prompt ? chatPromptHeight : h
+            }
+        }
+        .onChange(of: state.notchWidth + state.notchHeight) { _, _ in
+            // Island moved to another screen: morph notch ↔ resting bar (expanded size doesn't depend on it).
+            guard state.mode != .expanded else { return }
+            let (w, h) = islandSize(mode: state.mode, view: state.view,
+                                    nw: state.notchWidth, nh: state.notchHeight)
+            withAnimation(openSpring) {
+                islandWidth  = w
+                islandHeight = h
             }
         }
         .onChange(of: state.chatHistory.count) { _, _ in
@@ -305,8 +322,13 @@ struct BotPlacement: View {
                 }
                 .transition(.scale(scale: 0.01, anchor: .center).combined(with: .opacity))
             } else {
+                let onCover = state.mode == .expanded && state.view == .spotify
                 BotCanvasView(state: state, particleOverhang: overhang)
                     .frame(width: canvasSize, height: canvasSize + overhang)
+                    // On the Spotify cover: a thin dark rim + soft drop shadow keep Mochi readable
+                    // even when the artwork has Mochi's colours.
+                    .shadow(color: .black.opacity(onCover ? 0.6 : 0), radius: 1.5)
+                    .shadow(color: .black.opacity(onCover ? 0.55 : 0), radius: 8, y: 4)
                     .opacity(state.isDraggingBot || state.mochiOnDesktop ? 0 : opacity)
                     .position(x: cx, y: cy - overhang / 2)
                     .animation(.spring(response: 0.5, dampingFraction: 0.72), value: cx)
@@ -437,7 +459,7 @@ struct IslandContentView: View {
                     // Views that fill available height instead of the fixed 98pt content frame:
                     // chat (prompt) is always flexible; mail is flexible only when active so
                     // it doesn't push the ZStack taller when inactive.
-                    let isTall = v == .prompt || (v == .mail && active)
+                    let isTall = v == .prompt || v == .clipboard || v == .system || ((v == .mail || v == .spotify || v == .venturo || v == .discord) && active)
                     let anim: Animation = active
                         ? .spring(response: 0.4, dampingFraction: 0.8).delay(0.16)
                         : .easeIn(duration: 0.16)
@@ -478,6 +500,11 @@ struct IslandHeader: View {
                     #endif
                 })
                 TabButton(icon: "plus", view: .upload, state: state)
+                TabButton(icon: "menubar.rectangle", view: .menuBar, state: state)
+                TabButton(icon: "doc.on.clipboard", view: .clipboard, state: state)
+                #if !APPSTORE
+                TabButton(icon: "waveform.path.ecg", view: .system, state: state)
+                #endif
             }
             .padding(.leading, 14)
 
