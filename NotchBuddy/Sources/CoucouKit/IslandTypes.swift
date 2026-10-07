@@ -201,8 +201,9 @@ enum IslandConst {
         .spotify:   ViewLayout(height: 196, botX: 82,  botY: 114, botDiameter: 54, agentMode: .none),
         // Venturo Bot detail: Mochi in the 116pt left gutter (see VenturoDetailView)
         .venturo:   ViewLayout(height: 244, botX: 64,  botY: 138, botDiameter: 54, agentMode: .none),
-        // Phone VPS troubleshooting: Mochi in the 116pt left gutter, card centre (see PhoneVPSDetailView)
-        .phonevps:  ViewLayout(height: 256, botX: 64,  botY: 144, botDiameter: 54, agentMode: .none),
+        // Phone VPS troubleshooting: Mochi in the 116pt left gutter, card centre (see PhoneVPSDetailView).
+        // The 8 service rows + stats + actions need ~212pt of card: 264 keeps the 10pt bottom margin.
+        .phonevps:  ViewLayout(height: 264, botX: 64,  botY: 148, botDiameter: 54, agentMode: .none),
         // Discord feed / voice: Mochi in the 116pt left gutter (see DiscordFullView)
         .discord:   ViewLayout(height: 230, botX: 64,  botY: 131, botDiameter: 54, agentMode: .none),
     ]
