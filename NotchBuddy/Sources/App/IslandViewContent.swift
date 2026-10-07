@@ -46,6 +46,12 @@ struct IslandViewContent: View {
             #else
             EmptyView()
             #endif
+        case .phonevps:
+            #if !APPSTORE
+            PhoneVPSDetailView(state: state)
+            #else
+            EmptyView()
+            #endif
         case .discord:
             #if !APPSTORE
             DiscordFullView(state: state)
@@ -154,7 +160,8 @@ struct OverviewView: View {
                 #else
                 let hideJumpButton = showingN8nDetail || activeDiffId != nil
                 #endif
-                if !hideJumpButton && agent?.id != "integration_venturo" && agent?.id != "integration_discord" {
+                if !hideJumpButton && agent?.id != "integration_venturo" && agent?.id != "integration_discord"
+                    && agent?.id != "integration_phonevps" {
                     Button(action: { openAgentTarget(agent) }) {
                         Image(systemName: "arrow.up.right")
                             .font(.system(size: 8, weight: .medium))
@@ -279,6 +286,10 @@ struct OverviewView: View {
         case "integration_venturo":
             #if !APPSTORE
             VenturoBotMonitor.shared.openApp()
+            #endif
+        case "integration_phonevps":
+            #if !APPSTORE
+            PhoneVPSMonitor.shared.openTerminal()
             #endif
         case "integration_discord":
             #if !APPSTORE
@@ -1737,6 +1748,12 @@ struct IntegrationCardView: View {
             #else
             return false
             #endif
+        case "integration_phonevps":
+            #if !APPSTORE
+            return PhoneVPSMonitor.shared.isConfigured
+            #else
+            return false
+            #endif
         case "integration_discord":
             #if !APPSTORE
             return DiscordService.shared.isInstalled
@@ -1852,6 +1869,14 @@ struct IntegrationCardView: View {
             if case .failed = d.connection { return Color(hex: "#F4505E") }
             return (d.unread ?? 0) > 0 ? Color(hex: "#5865F2") : Color(hex: "#22C55E")
         }
+        if task.id == PhoneVPSMonitor.pillId {
+            switch PhoneVPSMonitor.shared.overall {
+            case .ok:      return Color(hex: "#22C55E")
+            case .busy:    return Color(hex: "#F5A524")
+            case .failing: return Color(hex: "#F4505E")
+            case .off:     return Color(hex: "#6B7079")
+            }
+        }
         if task.id == VenturoBotMonitor.pillId {
             switch VenturoBotMonitor.shared.overall {
             case .ok:      return Color(hex: "#22C55E")
@@ -1886,6 +1911,16 @@ struct IntegrationCardView: View {
             if let me = d.myVoice { return "In voice · \(d.channel(me.channelId)?.name ?? "")" }
             if let n = d.unread { return n == 0 ? "No unread" : "\(n) unread" }
             return "Discord not running"
+        }
+        if task.id == PhoneVPSMonitor.pillId {
+            let vps = PhoneVPSMonitor.shared
+            if !vps.isConfigured { return "No ssh host \(PhoneVPSMonitor.sshHost) in ~/.ssh/config" }
+            switch vps.overall {
+            case .ok:      return "All services up"
+            case .busy:    return "Checking the phone…"
+            case .failing: return vps.reachable == .failing ? "Phone unreachable" : "Needs attention"
+            case .off:     return "Not checked yet"
+            }
         }
         if task.id == VenturoBotMonitor.pillId {
             let bot = VenturoBotMonitor.shared
@@ -2011,6 +2046,11 @@ struct IntegrationCardView: View {
         } else if task.id == "integration_venturo" {
             #if !APPSTORE
             VenturoCardView(state: appState)
+                .transition(.opacity)
+            #endif
+        } else if task.id == "integration_phonevps" {
+            #if !APPSTORE
+            PhoneVPSCardView(state: appState)
                 .transition(.opacity)
             #endif
         } else if task.id == "integration_discord" {
@@ -2197,7 +2237,8 @@ struct IntegrationCardView: View {
                        && task.id != "integration_music"
                        && task.id != "integration_spotify"
                        && task.id != "integration_venturo"
-                       && task.id != "integration_discord" {
+                       && task.id != "integration_discord"
+                       && task.id != "integration_phonevps" {
                         Button("Settings…") {
                             let section: String
                             switch PillCatalog.definition(for: task.id)?.category {
