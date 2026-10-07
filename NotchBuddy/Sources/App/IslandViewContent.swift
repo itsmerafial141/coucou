@@ -126,6 +126,7 @@ struct OverviewView: View {
                     }
                 }
                 }
+                .padding(.bottom, 6)   // balances the title row's 6pt top padding so the text sits on centre
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
 

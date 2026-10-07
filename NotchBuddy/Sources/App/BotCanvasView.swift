@@ -72,12 +72,13 @@ struct BotCanvasView: View {
                     guard appleMusic || spotify else { return false }
                     let allowed: Set<BotState> = [.idle, .working, .thinking, .searching, .finished]
                     guard allowed.contains(state.effectiveState) else { return false }
-                    if state.mode == .compact { return true }
+                    // Only the music Mochi (Apple Music / Spotify focused) dances.
+                    let musicFocused = (appleMusic && state.focusId == "integration_music")
+                        || (spotify && state.focusId == SpotifyController.pillId)
+                    if state.mode == .compact { return musicFocused }
                     guard state.mode == .expanded else { return false }
                     if spotify && state.view == .spotify { return true }
-                    return state.view == .overview
-                        && ((appleMusic && state.focusId == "integration_music")
-                            || (spotify && state.focusId == SpotifyController.pillId))
+                    return state.view == .overview && musicFocused
                     #else
                     return false
                     #endif

@@ -231,7 +231,10 @@ struct SpotifyPlayerView: View {
                     hint("Loading…")
                 }
             }
-            .frame(maxHeight: .infinity, alignment: .center)
+            // minHeight 0 + clip: long (wrapped) lyrics must not grow the card past the cover,
+            // which ate the island's bottom margin.
+            .frame(minHeight: 0, maxHeight: .infinity, alignment: .center)
+            .clipped()
             if spotify.lyricsEnabled {
                 Text("LRCLIB").font(.system(size: 8.5)).foregroundColor(Color(hex: "#4A4E55"))
             }

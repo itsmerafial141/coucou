@@ -170,7 +170,9 @@ enum IslandConst {
 
     static let viewLayouts: [IslandView: ViewLayout] = [
         // Home is the reference: height 150
-        .overview:  ViewLayout(height: 160, botX: 68,  botY: nil, botDiameter: 58, agentMode: .pills),
+        // botY: the left card's centre (header ends at 42, 10pt bottom padding → (42 + 150) / 2),
+        // minus the body's ~1pt drop inside its canvas; the auto value sat ~6pt low.
+        .overview:  ViewLayout(height: 160, botX: 68,  botY: 95,  botDiameter: 58, agentMode: .pills),
         // All non-chat views match home height (150) — law
         .empty:     ViewLayout(height: 160, botX: 70,  botY: nil, botDiameter: 62, agentMode: .none),
         .approval:  ViewLayout(height: 160, botX: 62,  botY: nil, botDiameter: 56, agentMode: .column),
