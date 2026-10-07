@@ -2,18 +2,22 @@
 import AppKit
 import Combine
 import Foundation
+import Network
 
 // MARK: - Loomify Service
 
 /// Reads one kanban board of a Loomify instance (the user's own server) over its REST API v2, moves
 /// cards between columns and creates tasks. URL in UserDefaults, API token in the Keychain.
-/// Polls every 60 s only while the pill is on. GitHub build only.
+/// Polls every 60 s only while the pill is on; a Loomify project webhook (through the user's own tunnel to
+/// 127.0.0.1:47823/loomify, HMAC-signed) makes changes show up at once. GitHub build only.
 @MainActor
 final class LoomifyService: ObservableObject {
     static let shared = LoomifyService()
     static let pillId = "integration_loomify"
     static let colorHex = "#A855F7"
     static let tokenKey = "loomify-token"
+    static let secretKey = "loomify-webhook-secret"
+    static let webhookPort: UInt16 = 47823
 
     struct Project: Identifiable, Hashable { let id: Int; let title: String }
 
@@ -30,13 +34,28 @@ final class LoomifyService: ObservableObject {
     @Published private(set) var error: String?
     /// New To-Do cards and comment notifications not yet seen on the board (newest first).
     @Published private(set) var events: [String] = []
+    /// Last signed webhook received; while recent, polling stops announcing (the webhook already did).
+    @Published private(set) var lastWebhook: Date?
 
     private(set) var viewId = 0
     private var seenCards: Set<Int>?
     private var lastNotificationId: Int?
     private var timer: Timer?
+    private var listener: NWListener?
+    private var refreshAgain = false
+    /// Tasks Coucou itself just moved or created: their webhook echo refreshes the board without a peek.
+    private var localEdits: [Int: Date] = [:]
     private var cancellables = Set<AnyCancellable>()
 
+    var webhookURL: String { "http://127.0.0.1:\(Self.webhookPort)/loomify" }
+    private var webhookLive: Bool { lastWebhook.map { Date().timeIntervalSince($0) < 3600 } ?? false }
+    /// Generated once, kept in the Keychain; the user pastes it into the Loomify project webhook.
+    var webhookSecret: String {
+        if let s = KeychainStore.shared.get(Self.secretKey), !s.isEmpty { return s }
+        let s = (0..<32).map { _ in String(format: "%02x", UInt8.random(in: 0...255)) }.joined()
+        KeychainStore.shared.set(Self.secretKey, value: s)
+        return s
+    }
     var hasToken: Bool { !(KeychainStore.shared.get(Self.tokenKey) ?? "").isEmpty }
     var isPillActive: Bool { AppState.shared.activeIntegrations.contains(Self.pillId) }
     var projectTitle: String { projects.first { $0.id == projectId }?.title ?? (projectId == 0 ? "Loomify" : "Project \(projectId)") }
@@ -68,6 +87,7 @@ final class LoomifyService: ObservableObject {
 
     private func start() {
         stop()
+        startListener()
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
             Task { @MainActor in LoomifyService.shared.refresh() }
@@ -77,6 +97,8 @@ final class LoomifyService: ObservableObject {
     private func stop() {
         timer?.invalidate()
         timer = nil
+        listener?.cancel()
+        listener = nil
     }
 
     private func restartIfActive() {
@@ -103,10 +125,15 @@ final class LoomifyService: ObservableObject {
     }
 
     func refresh() {
-        guard hasToken, !loading else { return }
+        guard hasToken else { return }
+        guard !loading else { refreshAgain = true; return }   // a webhook mid-load: read the board once more after
         loading = true
         Task {
-            defer { loading = false; syncTask() }
+            defer {
+                loading = false
+                syncTask()
+                if refreshAgain { refreshAgain = false; refresh() }
+            }
             do {
                 if projects.isEmpty || projectId == 0 { try await loadProjects() }
                 guard projectId != 0 else { return }
@@ -117,7 +144,7 @@ final class LoomifyService: ObservableObject {
                 seenCards = Set(parsed.flatMap(\.cards).map(\.id))
                 buckets = parsed
                 error = nil
-                for card in fresh { announce("\(card.identifier) masuk \(parsed.first?.title ?? "To-Do") · \(card.title)") }
+                for card in fresh where !webhookLive { announce("\(card.identifier) masuk \(parsed.first?.title ?? "To-Do") · \(card.title)") }
                 await checkNotifications()
             } catch {
                 self.error = (error as? LoomifyError)?.message ?? error.localizedDescription
@@ -133,6 +160,7 @@ final class LoomifyService: ObservableObject {
         // Optimistic: the card moves at once, the next refresh confirms (or restores) it.
         buckets[from].cards.removeAll { $0.id == card.id }
         buckets[to].cards.insert(card, at: 0)
+        localEdits[card.id] = Date()
         Task {
             do {
                 _ = try await request("PUT", "/projects/\(projectId)/views/\(viewId)/buckets/\(bucketId)/tasks",
@@ -160,6 +188,7 @@ final class LoomifyService: ObservableObject {
                 // Our own task is not "new": remember it before the refresh sees it.
                 if let id = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["id"] as? Int {
                     seenCards?.insert(id)
+                    localEdits[id] = Date()
                 }
             } catch {
                 self.error = (error as? LoomifyError)?.message ?? error.localizedDescription
@@ -217,13 +246,58 @@ final class LoomifyService: ObservableObject {
         defer { if let newestId { lastNotificationId = max(lastNotificationId ?? 0, newestId) } }
         guard let last = lastNotificationId else { return }   // first read: only remember where we are
         for n in items.reversed() {
-            guard let id = n["id"] as? Int, id > last, (n["name"] as? String)?.hasPrefix("task.comment") == true,
+            guard !webhookLive, let id = n["id"] as? Int, id > last, (n["name"] as? String)?.hasPrefix("task.comment") == true,
                   Loomify.date(n["read_at"]) == nil,
                   let payload = n["notification"] as? [String: Any],
                   let task = payload["task"] as? [String: Any] else { continue }
             let who = (payload["doer"] as? [String: Any])?["name"] as? String ?? "Someone"
             announce("\(who) berkomentar di \(task["identifier"] as? String ?? "") · \(task["title"] as? String ?? "")")
         }
+    }
+
+    // MARK: - Webhook listener (loopback only; the tunnel forwards to it)
+
+    private func startListener() {
+        let params = NWParameters.tcp
+        params.allowLocalEndpointReuse = true
+        params.requiredLocalEndpoint = .hostPort(host: .ipv4(.loopback), port: NWEndpoint.Port(rawValue: Self.webhookPort)!)
+        guard let l = try? NWListener(using: params) else { return }
+        l.newConnectionHandler = { conn in
+            conn.start(queue: .global(qos: .utility))
+            Self.receive(conn, buffer: Data())
+        }
+        l.start(queue: .global(qos: .utility))
+        listener = l
+    }
+
+    private nonisolated static func receive(_ conn: NWConnection, buffer: Data) {
+        conn.receive(minimumIncompleteLength: 1, maximumLength: 65_536) { chunk, _, complete, error in
+            var buf = buffer
+            if let chunk { buf.append(chunk) }
+            if let req = Loomify.parseHTTP(buf) {
+                Task { @MainActor in
+                    let status = LoomifyService.shared.handle(req)
+                    conn.send(content: Data("HTTP/1.1 \(status)\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".utf8),
+                              completion: .contentProcessed { _ in conn.cancel() })
+                }
+            } else if complete || error != nil || buf.count > 1_048_576 {
+                conn.cancel()
+            } else {
+                receive(conn, buffer: buf)
+            }
+        }
+    }
+
+    private func handle(_ req: Loomify.HTTPRequest) -> String {
+        guard req.method == "POST", req.path.hasPrefix("/loomify") else { return "404 Not Found" }
+        guard Loomify.validSignature(req, secret: webhookSecret) else { return "401 Unauthorized" }
+        guard let event = Loomify.parseWebhook(req.body) else { return "400 Bad Request" }
+        lastWebhook = Date()
+        localEdits = localEdits.filter { Date().timeIntervalSince($0.value) < 15 }
+        let ownEcho = event.taskId.map { localEdits[$0] != nil } ?? false
+        if !ownEcho { announce(event.line) }
+        refresh()
+        return "200 OK"
     }
 
     private func announce(_ line: String) {

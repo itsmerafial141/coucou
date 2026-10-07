@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// Loomify board models and the pure logic behind the Loomify pill (tested by scripts/test-loomify.sh).
@@ -94,5 +95,83 @@ enum Loomify {
         f.locale = Locale(identifier: "id_ID")
         f.dateFormat = "d MMM"
         return f.string(from: due)
+    }
+
+    // MARK: - Webhook (project webhook → Coucou's local listener)
+
+    struct HTTPRequest {
+        let method: String
+        let path: String
+        let headers: [String: String]   // lowercased names
+        let body: Data
+    }
+
+    /// One HTTP/1.1 request from raw bytes; nil until the headers and the Content-Length body are all in.
+    static func parseHTTP(_ raw: Data) -> HTTPRequest? {
+        guard let split = raw.range(of: Data("\r\n\r\n".utf8)),
+              let head = String(data: raw[..<split.lowerBound], encoding: .utf8) else { return nil }
+        let lines = head.components(separatedBy: "\r\n")
+        let start = lines[0].split(separator: " ")
+        guard start.count >= 2 else { return nil }
+        var headers: [String: String] = [:]
+        for line in lines.dropFirst() {
+            guard let c = line.firstIndex(of: ":") else { continue }
+            headers[line[..<c].lowercased()] = line[line.index(after: c)...].trimmingCharacters(in: .whitespaces)
+        }
+        let body = raw[split.upperBound...]
+        let length = Int(headers["content-length"] ?? "0") ?? 0
+        guard body.count >= length else { return nil }
+        return HTTPRequest(method: String(start[0]), path: String(start[1]), headers: headers, body: Data(body.prefix(length)))
+    }
+
+    /// Loomify signs the body with HMAC-SHA256 (hex) in an `X-…-Signature` header.
+    static func validSignature(_ req: HTTPRequest, secret: String) -> Bool {
+        guard !secret.isEmpty,
+              let sig = req.headers.first(where: { $0.key.hasSuffix("-signature") })?.value.lowercased() else { return false }
+        let mac = HMAC<SHA256>.authenticationCode(for: req.body, using: SymmetricKey(data: Data(secret.utf8)))
+        let hex = mac.map { String(format: "%02x", $0) }.joined()
+        // Constant-time compare.
+        return sig.utf8.count == hex.utf8.count && zip(sig.utf8, hex.utf8).reduce(0) { $0 | ($1.0 ^ $1.1) } == 0
+    }
+
+    struct WebhookEvent: Equatable {
+        let name: String
+        let taskId: Int?
+        let doerId: Int?
+        let line: String
+    }
+
+    /// `{"event_name":"task.updated","data":{"task":{…},"doer":{…},"comment":{…}}}` → one notch line.
+    static func parseWebhook(_ body: Data) -> WebhookEvent? {
+        guard let obj = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
+              let name = obj["event_name"] as? String else { return nil }
+        let data = obj["data"] as? [String: Any] ?? [:]
+        let task = data["task"] as? [String: Any]
+        let doer = data["doer"] as? [String: Any]
+        let who = (doer?["name"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? doer?["username"] as? String ?? "Seseorang"
+        let verb: String
+        switch name {
+        case "task.created":           verb = "membuat"
+        case "task.updated":           verb = "mengubah"
+        case "task.deleted":           verb = "menghapus"
+        case "task.comment.created":   verb = "berkomentar di"
+        case "task.comment.edited":    verb = "mengedit komentar di"
+        case "task.comment.deleted":   verb = "menghapus komentar di"
+        case "task.assignee.created":  verb = "menugaskan"
+        case "task.assignee.deleted":  verb = "melepas penugasan"
+        case "task.attachment.created": verb = "melampirkan file di"
+        case "task.attachment.deleted": verb = "menghapus lampiran di"
+        case "task.relation.created", "task.relation.deleted": verb = "mengubah relasi"
+        case "task.overdue":           verb = "telat:"
+        case "task.reminder.fired":    verb = "pengingat:"
+        default:                       verb = name
+        }
+        let subject = task.map { t in
+            let id = t["identifier"] as? String ?? (t["index"] as? Int).map { "#\($0)" } ?? ""
+            return " \(id) · \(t["title"] as? String ?? "")"
+        } ?? ""
+        let automatic = name.hasSuffix("overdue") || name == "task.reminder.fired"
+        return WebhookEvent(name: name, taskId: task?["id"] as? Int, doerId: doer?["id"] as? Int,
+                            line: (automatic ? verb : "\(who) \(verb)") + subject)
     }
 }

@@ -287,8 +287,31 @@ struct LoomifySettingsSection: View {
                 }
                 Text("Coucou membaca board kanban project ini, memindahkan kartu dan membuat task atas klikmu. Token dibuat di Loomify → Settings → API Tokens.")
                     .font(.system(size: 11)).foregroundColor(.secondary)
+                Divider()
+                Text("Webhook (update instan)").font(.system(size: 12, weight: .semibold))
+                copyRow("Endpoint", lf.webhookURL)
+                copyRow("Secret", lf.webhookSecret, masked: true)
+                Text("Buka tunnel ke endpoint ini (mis. cloudflared tunnel --url \(lf.webhookURL.replacingOccurrences(of: "/loomify", with: ""))), lalu di Loomify → project → ⋯ → Webhooks isi Target URL https://<tunnel>/loomify, Secret di atas, dan centang semua event task. Tanpa webhook, Coucou tetap cek tiap 60 dtk.")
+                    .font(.system(size: 11)).foregroundColor(.secondary)
+                if let t = lf.lastWebhook {
+                    Text("Event terakhir: \(t.formatted(date: .omitted, time: .shortened))")
+                        .font(.system(size: 11)).foregroundColor(.secondary)
+                }
             }
             .padding(6)
+        }
+    }
+
+    private func copyRow(_ label: String, _ value: String, masked: Bool = false) -> some View {
+        HStack {
+            Text(label).font(.system(size: 11)).foregroundColor(.secondary).frame(width: 60, alignment: .leading)
+            Text(masked ? String(repeating: "•", count: 16) : value)
+                .font(.system(size: 11, design: .monospaced)).textSelection(.enabled).lineLimit(1)
+            Spacer()
+            Button("Copy") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(value, forType: .string)
+            }
         }
     }
 

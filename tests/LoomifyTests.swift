@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 @main
@@ -42,6 +43,28 @@ enum LoomifyTests {
         check("tomorrow label", Loomify.dueLabel(d("2026-10-09T09:00:00Z"), now: now, calendar: cal) == "besok")
         check("days label", Loomify.dueLabel(d("2026-10-11T09:00:00Z"), now: now, calendar: cal) == "3 hr")
         check("no due → nil", Loomify.dueLabel(nil, now: now) == nil)
+
+        // Webhook: HTTP framing, HMAC, event lines.
+        let body = ##"{"event_name":"task.updated","time":"2026-10-08T10:00:00Z","data":{"task":{"id":52,"identifier":"#11","title":"Webhook"},"doer":{"id":3,"name":"Rafi","username":"rafial141"}}}"##
+        let secret = "s3cret"
+        let sig = HMAC<SHA256>.authenticationCode(for: Data(body.utf8), using: SymmetricKey(data: Data(secret.utf8)))
+            .map { String(format: "%02x", $0) }.joined()
+        let raw = "POST /loomify HTTP/1.1\r\nHost: x\r\nContent-Length: \(body.utf8.count)\r\nX-Loomify-Signature: \(sig)\r\n\r\n\(body)"
+        check("partial request waits for the body", Loomify.parseHTTP(Data(raw.utf8).dropLast(5)) == nil)
+        let req = Loomify.parseHTTP(Data(raw.utf8))
+        check("request parsed", req?.method == "POST" && req?.path == "/loomify" && req?.body == Data(body.utf8))
+        check("valid signature accepted", req.map { Loomify.validSignature($0, secret: secret) } ?? false)
+        check("wrong secret rejected", !(req.map { Loomify.validSignature($0, secret: "nope") } ?? true))
+        check("empty secret rejected", !(req.map { Loomify.validSignature($0, secret: "") } ?? true))
+        let unsigned = Loomify.parseHTTP(Data("POST /loomify HTTP/1.1\r\nContent-Length: 2\r\n\r\n{}".utf8))
+        check("missing signature rejected", !(unsigned.map { Loomify.validSignature($0, secret: secret) } ?? true))
+        let ev = Loomify.parseWebhook(Data(body.utf8))
+        check("update line", ev?.line == "Rafi mengubah #11 · Webhook" && ev?.taskId == 52 && ev?.doerId == 3)
+        let comment = Loomify.parseWebhook(Data(##"{"event_name":"task.comment.created","data":{"task":{"id":1,"index":4,"title":"A"},"doer":{"username":"bo"}}}"##.utf8))
+        check("comment line falls back to index and username", comment?.line == "bo berkomentar di #4 · A")
+        let overdue = Loomify.parseWebhook(Data(##"{"event_name":"task.overdue","data":{"task":{"id":1,"identifier":"#2","title":"B"}}}"##.utf8))
+        check("overdue line has no doer", overdue?.line == "telat: #2 · B")
+        check("garbage ignored", Loomify.parseWebhook(Data("nope".utf8)) == nil)
 
         if failures > 0 { print("\(failures) failure(s)"); exit(1) }
         print("loomify: ok")
