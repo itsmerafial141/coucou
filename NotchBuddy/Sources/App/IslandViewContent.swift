@@ -3994,7 +3994,10 @@ struct AgentPill: View {
                                          : Color(hex: "#6B7079"))
                         .lineLimit(1)
                         .truncationMode(.tail)
-                        .frame(maxWidth: .infinity, alignment: .center)
+                        // Left-aligned right after the Mochi (8 + 22 + 6), same as MusicPill, so names line up.
+                        .padding(.leading, 36)
+                        .padding(.trailing, 10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 28)
@@ -4066,9 +4069,9 @@ struct MusicPill: View {
                 .foregroundColor(isHovered ? Color(hex: task.color).lighter(by: 0.3) : Color(hex: "#6B7079"))
                 .lineLimit(1)
                 .truncationMode(.tail)
-                .padding(.leading, 34)
+                .padding(.leading, 36)
                 .padding(.trailing, showControls ? 52 : 10)
-                .frame(maxWidth: .infinity, alignment: .center)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .animation(.spring(response: 0.2, dampingFraction: 0.7), value: showControls)
                 .allowsHitTesting(false)
 
