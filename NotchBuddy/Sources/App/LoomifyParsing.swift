@@ -142,7 +142,8 @@ enum Loomify {
     }
 
     /// `{"event_name":"task.updated","data":{"task":{…},"doer":{…},"comment":{…}}}` → one notch line.
-    static func parseWebhook(_ body: Data) -> WebhookEvent? {
+    /// Webhooks come from every project, so the line names the task's project when it is known.
+    static func parseWebhook(_ body: Data, projects: [Int: String] = [:]) -> WebhookEvent? {
         guard let obj = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
               let name = obj["event_name"] as? String else { return nil }
         let data = obj["data"] as? [String: Any] ?? [:]
@@ -168,7 +169,8 @@ enum Loomify {
         }
         let subject = task.map { t in
             let id = t["identifier"] as? String ?? (t["index"] as? Int).map { "#\($0)" } ?? ""
-            return " \(id) · \(t["title"] as? String ?? "")"
+            let project = (t["project_id"] as? Int).flatMap { projects[$0] }.map { " \($0)" } ?? ""
+            return "\(project) \(id) · \(t["title"] as? String ?? "")"
         } ?? ""
         let automatic = name.hasSuffix("overdue") || name == "task.reminder.fired"
         return WebhookEvent(name: name, taskId: task?["id"] as? Int, doerId: doer?["id"] as? Int,

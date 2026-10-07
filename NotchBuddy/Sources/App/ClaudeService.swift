@@ -71,7 +71,7 @@ final class KeychainStore: @unchecked Sendable {
         "stripe-api-key",
         "calcom-api-key",
         "notion-api-key",
-        "loomify-token",
+        "loomify-token", "loomify-webhook-secret",
     ]
 
     private init() {

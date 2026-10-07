@@ -64,6 +64,8 @@ enum LoomifyTests {
         check("comment line falls back to index and username", comment?.line == "bo berkomentar di #4 · A")
         let overdue = Loomify.parseWebhook(Data(##"{"event_name":"task.overdue","data":{"task":{"id":1,"identifier":"#2","title":"B"}}}"##.utf8))
         check("overdue line has no doer", overdue?.line == "telat: #2 · B")
+        let named = Loomify.parseWebhook(Data(##"{"event_name":"task.created","data":{"task":{"id":9,"project_id":1,"identifier":"#3","title":"C"},"doer":{"name":"Rafi"}}}"##.utf8), projects: [1: "Bayiku"])
+        check("line names the project", named?.line == "Rafi membuat Bayiku #3 · C")
         check("garbage ignored", Loomify.parseWebhook(Data("nope".utf8)) == nil)
 
         if failures > 0 { print("\(failures) failure(s)"); exit(1) }

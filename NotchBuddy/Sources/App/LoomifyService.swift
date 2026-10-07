@@ -79,7 +79,9 @@ final class LoomifyService: ObservableObject {
         AppState.shared.$activeIntegrations
             .map { $0.contains(Self.pillId) }
             .removeDuplicates()
-            .sink { [weak self] on in on ? self?.start() : self?.stop() }
+            .sink { [weak self] on in
+                if on { self?.start() } else { self?.stop(); self?.stopListener() }
+            }
             .store(in: &cancellables)
     }
 
@@ -87,7 +89,7 @@ final class LoomifyService: ObservableObject {
 
     private func start() {
         stop()
-        startListener()
+        if listener == nil { startListener() }   // the listener outlives project/token restarts
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
             Task { @MainActor in LoomifyService.shared.refresh() }
@@ -97,6 +99,9 @@ final class LoomifyService: ObservableObject {
     private func stop() {
         timer?.invalidate()
         timer = nil
+    }
+
+    private func stopListener() {
         listener?.cancel()
         listener = nil
     }
@@ -261,10 +266,26 @@ final class LoomifyService: ObservableObject {
         let params = NWParameters.tcp
         params.allowLocalEndpointReuse = true
         params.requiredLocalEndpoint = .hostPort(host: .ipv4(.loopback), port: NWEndpoint.Port(rawValue: Self.webhookPort)!)
-        guard let l = try? NWListener(using: params) else { return }
+        let l: NWListener
+        do { l = try NWListener(using: params) } catch {
+            appendAppLog("loomify.log", "webhook listener not created: \(error)")
+            return
+        }
         l.newConnectionHandler = { conn in
             conn.start(queue: .global(qos: .utility))
             Self.receive(conn, buffer: Data())
+        }
+        l.stateUpdateHandler = { state in
+            appendAppLog("loomify.log", "webhook listener \(state)")
+            guard case .failed(let error) = state else { return }
+            // Port still held (e.g. the previous app instance quitting): try again shortly.
+            Task { @MainActor in
+                let lf = LoomifyService.shared
+                appendAppLog("loomify.log", "webhook listener failed: \(error)")
+                lf.stopListener()
+                try? await Task.sleep(for: .seconds(5))
+                if lf.isPillActive && lf.listener == nil { lf.startListener() }
+            }
         }
         l.start(queue: .global(qos: .utility))
         listener = l
@@ -290,8 +311,16 @@ final class LoomifyService: ObservableObject {
 
     private func handle(_ req: Loomify.HTTPRequest) -> String {
         guard req.method == "POST", req.path.hasPrefix("/loomify") else { return "404 Not Found" }
-        guard Loomify.validSignature(req, secret: webhookSecret) else { return "401 Unauthorized" }
-        guard let event = Loomify.parseWebhook(req.body) else { return "400 Bad Request" }
+        guard Loomify.validSignature(req, secret: webhookSecret) else {
+            appendAppLog("loomify.log", "webhook rejected: bad signature (\(req.headers.keys.filter { $0.hasPrefix("x-") }.sorted()), length \(req.headers["content-length"] ?? "-"), encoding \(req.headers["transfer-encoding"] ?? "-"), body \(req.body.count) bytes)")
+            return "401 Unauthorized"
+        }
+        let titles = Dictionary(projects.map { ($0.id, $0.title) }, uniquingKeysWith: { a, _ in a })
+        guard let event = Loomify.parseWebhook(req.body, projects: titles) else {
+            appendAppLog("loomify.log", "webhook ignored: unreadable body (\(req.body.count) bytes)")
+            return "400 Bad Request"
+        }
+        appendAppLog("loomify.log", "webhook \(event.name) task \(event.taskId.map(String.init) ?? "-")")
         lastWebhook = Date()
         localEdits = localEdits.filter { Date().timeIntervalSince($0.value) < 15 }
         let ownEcho = event.taskId.map { localEdits[$0] != nil } ?? false
