@@ -198,7 +198,7 @@ enum IslandConst {
         // Spotify player: Mochi sits on the middle of the 124pt cover (see SpotifyPlayerView)
         .spotify:   ViewLayout(height: 196, botX: 82,  botY: 114, botDiameter: 54, agentMode: .none),
         // Venturo Bot detail: Mochi in the 116pt left gutter (see VenturoDetailView)
-        .venturo:   ViewLayout(height: 220, botX: 64,  botY: 126, botDiameter: 54, agentMode: .none),
+        .venturo:   ViewLayout(height: 244, botX: 64,  botY: 138, botDiameter: 54, agentMode: .none),
         // Discord feed / voice: Mochi in the 116pt left gutter (see DiscordFullView)
         .discord:   ViewLayout(height: 230, botX: 64,  botY: 131, botDiameter: 54, agentMode: .none),
     ]

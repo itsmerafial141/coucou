@@ -71,7 +71,8 @@ struct OverviewView: View {
             ZStack(alignment: .topLeading) {
                 CardBackground(wash: nil)
 
-                // Title row + ticker stacked (or integration card)
+                // Title row + ticker stacked (or integration card), centred vertically in the card
+                Group {
                 if let agent = agent {
                     if agent.isIntegration {
                         IntegrationCardView(task: agent, showingDetail: $showingN8nDetail, onDiffTap: { diffIdx in
@@ -124,6 +125,9 @@ struct OverviewView: View {
                         .padding(.top, 4)
                     }
                 }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
 
                 // Plan detail overlays on top of normal content (GitHub build, home view only)
                 #if !APPSTORE
