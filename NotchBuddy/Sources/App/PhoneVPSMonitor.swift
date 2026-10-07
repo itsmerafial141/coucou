@@ -20,7 +20,7 @@ final class PhoneVPSMonitor: ObservableObject {
     /// Services with a log `log` can tail.
     static let withLog: Set<String> = ["cloudflared", "cloudflared-watchdog", "jenkins", "space-mcp", "health-api"]
     /// Hosts served by nginx on the phone (same list as the MCP's luar.py).
-    nonisolated static let sites = ["jenkins", "space-mcp", "health", "health-view", "venturo", "venturo-dev", "venturo-staging"]
+    nonisolated static let sites = ["jenkins", "space-mcp", "health", "health-view", "venturo", "venturo-dev", "venturo-staging", "loomify"]
 
     enum Health { case ok, busy, failing, off }
 
