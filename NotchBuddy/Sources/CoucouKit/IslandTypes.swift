@@ -12,7 +12,7 @@ enum IslandView: String, CaseIterable {
     case overview, empty, approval, question, error, finished
     case confused, upload, uploading, choose, mail, prompt
     case searching, result, note, settings, greeting, wardrobe
-    case menuBar, spotify, venturo, discord, clipboard, system, phonevps
+    case menuBar, spotify, venturo, discord, clipboard, system, phonevps, loomify
 }
 
 // MARK: - Bot State
@@ -43,7 +43,7 @@ struct ApprovalInfo: Sendable {
 
 // MARK: - Pill badge (shown on pill edge when non-focused task has an alert)
 
-enum PillBadge { case approval, finished, error }
+enum PillBadge { case approval, finished, error, news }
 
 // MARK: - Agent Task
 
@@ -204,6 +204,8 @@ enum IslandConst {
         // Phone VPS troubleshooting: Mochi in the 116pt left gutter, card centre (see PhoneVPSDetailView).
         // The 8 service rows + stats + actions need ~212pt of card: 264 keeps the 10pt bottom margin.
         .phonevps:  ViewLayout(height: 264, botX: 64,  botY: 148, botDiameter: 54, agentMode: .none),
+        // Loomify kanban: Mochi at the top of the 116pt left gutter, project info below (see LoomifyBoardView)
+        .loomify:   ViewLayout(height: 276, botX: 64,  botY: 86,  botDiameter: 54, agentMode: .none),
         // Discord feed / voice: Mochi in the 116pt left gutter (see DiscordFullView)
         .discord:   ViewLayout(height: 230, botX: 64,  botY: 131, botDiameter: 54, agentMode: .none),
     ]

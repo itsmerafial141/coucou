@@ -126,6 +126,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = SpotifyController.shared
         _ = VenturoBotMonitor.shared
         _ = PhoneVPSMonitor.shared
+        _ = LoomifyService.shared
         _ = DiscordService.shared
         #endif
     }

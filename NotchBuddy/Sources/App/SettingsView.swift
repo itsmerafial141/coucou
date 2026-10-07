@@ -914,6 +914,7 @@ struct SettingsView: View {
         }
         #if !APPSTORE
         DiscordSettingsSection()
+        LoomifySettingsSection()
         #endif
     }
 

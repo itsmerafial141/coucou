@@ -52,6 +52,12 @@ struct IslandViewContent: View {
             #else
             EmptyView()
             #endif
+        case .loomify:
+            #if !APPSTORE
+            LoomifyBoardView(state: state)
+            #else
+            EmptyView()
+            #endif
         case .discord:
             #if !APPSTORE
             DiscordFullView(state: state)
@@ -161,7 +167,7 @@ struct OverviewView: View {
                 let hideJumpButton = showingN8nDetail || activeDiffId != nil
                 #endif
                 if !hideJumpButton && agent?.id != "integration_venturo" && agent?.id != "integration_discord"
-                    && agent?.id != "integration_phonevps" {
+                    && agent?.id != "integration_phonevps" && agent?.id != "integration_loomify" {
                     Button(action: { openAgentTarget(agent) }) {
                         Image(systemName: "arrow.up.right")
                             .font(.system(size: 8, weight: .medium))
@@ -290,6 +296,10 @@ struct OverviewView: View {
         case "integration_phonevps":
             #if !APPSTORE
             PhoneVPSMonitor.shared.openTerminal()
+            #endif
+        case "integration_loomify":
+            #if !APPSTORE
+            LoomifyService.shared.open()
             #endif
         case "integration_discord":
             #if !APPSTORE
@@ -1754,6 +1764,12 @@ struct IntegrationCardView: View {
             #else
             return false
             #endif
+        case "integration_loomify":
+            #if !APPSTORE
+            return LoomifyService.shared.hasToken
+            #else
+            return false
+            #endif
         case "integration_discord":
             #if !APPSTORE
             return DiscordService.shared.isInstalled
@@ -1869,6 +1885,14 @@ struct IntegrationCardView: View {
             if case .failed = d.connection { return Color(hex: "#F4505E") }
             return (d.unread ?? 0) > 0 ? Color(hex: "#5865F2") : Color(hex: "#22C55E")
         }
+        if task.id == LoomifyService.pillId {
+            switch LoomifyService.shared.overall {
+            case .ok:      return Color(hex: "#22C55E")
+            case .news:    return Color(hex: LoomifyService.colorHex)
+            case .failing: return Color(hex: "#F4505E")
+            case .off:     return Color(hex: "#6B7079")
+            }
+        }
         if task.id == PhoneVPSMonitor.pillId {
             switch PhoneVPSMonitor.shared.overall {
             case .ok:      return Color(hex: "#22C55E")
@@ -1911,6 +1935,13 @@ struct IntegrationCardView: View {
             if let me = d.myVoice { return "In voice · \(d.channel(me.channelId)?.name ?? "")" }
             if let n = d.unread { return n == 0 ? "No unread" : "\(n) unread" }
             return "Discord not running"
+        }
+        if task.id == LoomifyService.pillId {
+            let lf = LoomifyService.shared
+            if !lf.hasToken { return "No API token (Settings → Integrations)" }
+            if let e = lf.error { return e }
+            if !lf.overdue.isEmpty { return "\(lf.overdue.count) overdue" }
+            return lf.buckets.isEmpty ? "Loading…" : lf.projectTitle
         }
         if task.id == PhoneVPSMonitor.pillId {
             let vps = PhoneVPSMonitor.shared
@@ -2051,6 +2082,11 @@ struct IntegrationCardView: View {
         } else if task.id == "integration_phonevps" {
             #if !APPSTORE
             PhoneVPSCardView(state: appState)
+                .transition(.opacity)
+            #endif
+        } else if task.id == "integration_loomify" {
+            #if !APPSTORE
+            LoomifyCardView(state: appState)
                 .transition(.opacity)
             #endif
         } else if task.id == "integration_discord" {
@@ -2238,7 +2274,8 @@ struct IntegrationCardView: View {
                        && task.id != "integration_spotify"
                        && task.id != "integration_venturo"
                        && task.id != "integration_discord"
-                       && task.id != "integration_phonevps" {
+                       && task.id != "integration_phonevps"
+                       && task.id != "integration_loomify" {
                         Button("Settings…") {
                             let section: String
                             switch PillCatalog.definition(for: task.id)?.category {
@@ -4236,6 +4273,7 @@ struct PillBadgeView: View {
         case .approval: return Color(hex: "#F5A524")
         case .finished: return Color(hex: "#22C55E")
         case .error:    return Color(hex: "#F4505E")
+        case .news:     return Color(hex: taskColor)
         }
     }
 
@@ -4244,6 +4282,7 @@ struct PillBadgeView: View {
         case .approval: return "exclamationmark"
         case .finished: return "checkmark"
         case .error:    return "xmark"
+        case .news:     return "bell.fill"
         }
     }
 

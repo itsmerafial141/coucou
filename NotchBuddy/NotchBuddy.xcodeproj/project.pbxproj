@@ -73,6 +73,7 @@
 		4D34FF10654B19B69FE1964C /* TurnSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1C4152EBDBD7C24CABFFD7 /* TurnSnapshot.swift */; };
 		4D958F2DDCE9504490FDA357 /* DiffEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B32FB972D02162720E566674 /* DiffEngine.swift */; };
 		4F1E0B3C838DA3CD6F864BC0 /* CalcomPoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3104222B3F17BA5E8DEA5277 /* CalcomPoller.swift */; };
+		4F34A9A7A3F601A03BEE1285 /* LoomifyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C17DA87558DB1AFC7D6AFD2 /* LoomifyService.swift */; };
 		52F0DF1FBCB522951910390E /* InstructionRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = FADC1FE5696B1075932D0B7C /* InstructionRunner.swift */; };
 		530443F46F896F037A56F663 /* HotKeyCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1218B86E249691AF44F819AC /* HotKeyCenter.swift */; };
 		56BE8C733F10A030A638FB60 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C1A7D5CBE2AC084A10C5FF3 /* SettingsView.swift */; };
@@ -110,6 +111,7 @@
 		78B3C6814431B2DD9D1F4949 /* SoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE21C2B315D37AA70ED45E9 /* SoundEngine.swift */; };
 		78F045A55E6F4EEA5787EEEF /* MochiStill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 045E7300878138F0AC385920 /* MochiStill.swift */; };
 		78FCEDC8F78B683AB10E6529 /* NotionPoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE03E03D1804B0B92C5C2DAD /* NotionPoller.swift */; };
+		79450BDFEE7099932D62FE7A /* LoomifyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C17DA87558DB1AFC7D6AFD2 /* LoomifyService.swift */; };
 		7A148B9E2D0F4F0CF73672FD /* FanHelperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6BE80EE596A5757028A3B30 /* FanHelperProtocol.swift */; };
 		7C75CCB3DC0116D8D3B12313 /* AskQuestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBB84A66045EB20CAC93A8A6 /* AskQuestion.swift */; };
 		7CD66CD38B314B35C4429177 /* AnthropicOAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF41DE4FD07FFC7F691C2657 /* AnthropicOAuth.swift */; };
@@ -159,6 +161,7 @@
 		B314F09AD7924387D0E04B45 /* BotEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66E6F5FC81429871B6F766A8 /* BotEngine.swift */; };
 		B3EC9CF3C8BD629C3530E8F1 /* sounds in Resources */ = {isa = PBXBuildFile; fileRef = C066E2B991AA4F56B2724263 /* sounds */; };
 		B605F976F4141435F27CF266 /* IslandRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A1A8206F73376F4CAF2057 /* IslandRootView.swift */; };
+		B6909F6A57E936761E44B32D /* LoomifyViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B9960819FA9C7D43272236E /* LoomifyViews.swift */; };
 		B71AB22E012C7217E126DE05 /* PhoneVPSViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9C79FE1B04D86DC1C585AC /* PhoneVPSViews.swift */; };
 		B733A76DD197F6D6D949284C /* HotKeyCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1218B86E249691AF44F819AC /* HotKeyCenter.swift */; };
 		B7C93262AA9D5DEAA0B79C7C /* MacStubs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B66D0C664FB9FF74517AAF5 /* MacStubs.swift */; };
@@ -169,6 +172,7 @@
 		BEC5DDB55B3DA67C61CA8470 /* DesktopMochi.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DDC96E7967032F5D0BD585 /* DesktopMochi.swift */; };
 		C07E9A04E827284FDF33DB16 /* ShortcutLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA51E5B140C20812641168EA /* ShortcutLogic.swift */; };
 		C0E18D0F6F5F6D131E6066B8 /* GreetingCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C581F7B1A9F14B281B60063E /* GreetingCanvasView.swift */; };
+		C12423C8ED0B41BA834ED4A5 /* LoomifyParsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF9345D75EF43CFDFB61DA8 /* LoomifyParsing.swift */; };
 		C18227D148D99FE6EE3CC51A /* GithubPoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CB8B6E5E9DA6164F979E88F /* GithubPoller.swift */; };
 		C3D39D96E087E98F8BF59226 /* LastTurnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 112D2BD70628CD67ACDD18AF /* LastTurnView.swift */; };
 		C3ECA730677F467D28910AF6 /* LiveActivityRelay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 136626568FF0C3EAB1D08067 /* LiveActivityRelay.swift */; };
@@ -200,6 +204,7 @@
 		DD2EEF113DB5EAA35CD88312 /* MochiOutfitDrawing.swift in Sources */ = {isa = PBXBuildFile; fileRef = E84E5D91129352E8A1D32AA4 /* MochiOutfitDrawing.swift */; };
 		DE05D09A32117582AC93A24A /* NotchBuddyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1BD8F3CAA60CF37640759E1 /* NotchBuddyApp.swift */; };
 		DE66BB6D18F467A7F4220CC3 /* SessionPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 824E56D2255CA86DAC350DBF /* SessionPublisher.swift */; };
+		DFFB890BDBA9094295346D2F /* LoomifyViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B9960819FA9C7D43272236E /* LoomifyViews.swift */; };
 		E2414533EDC7565286141198 /* SpotifyController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A9E6EB7C8468A8339CF6A5C /* SpotifyController.swift */; };
 		E455AEC6DA870A15D066F4EC /* VenturoViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1648DC2D9BA295F3605A318C /* VenturoViews.swift */; };
 		E4B9986674F4D425826F15A8 /* StripePoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EF78999D68D56ADE4CEFBE2 /* StripePoller.swift */; };
@@ -219,6 +224,7 @@
 		EFAA9936D5C9DE635CFBA2AB /* SharedSessions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1064AD8471C51AFF4F12258 /* SharedSessions.swift */; };
 		F0612DC6AAFFBC7EB8AE722F /* MenuBarTrayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A136C9A3D438D572F4067F62 /* MenuBarTrayView.swift */; };
 		F06EE0A97CB77096A337AA8B /* sounds in Resources */ = {isa = PBXBuildFile; fileRef = C066E2B991AA4F56B2724263 /* sounds */; };
+		F09D4C95AD250B40DE21D4EA /* LoomifyParsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF9345D75EF43CFDFB61DA8 /* LoomifyParsing.swift */; };
 		F25EB7EF3662AFF99AA1C8A1 /* TeamConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8C1BB0DF7770A6B263995E6 /* TeamConfiguration.swift */; };
 		F28275101D83F121E582B1B1 /* LiveActivityRelay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 136626568FF0C3EAB1D08067 /* LiveActivityRelay.swift */; };
 		F545FB0682BE98F3070D6F45 /* VenturoViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1648DC2D9BA295F3605A318C /* VenturoViews.swift */; };
@@ -288,6 +294,7 @@
 		0365DDE3C554F5E8570055F4 /* IslandTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslandTypes.swift; sourceTree = "<group>"; };
 		045E7300878138F0AC385920 /* MochiStill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MochiStill.swift; sourceTree = "<group>"; };
 		08128342A3F894D567AD9E6B /* ServiceViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceViews.swift; sourceTree = "<group>"; };
+		0B9960819FA9C7D43272236E /* LoomifyViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoomifyViews.swift; sourceTree = "<group>"; };
 		0C9C79FE1B04D86DC1C585AC /* PhoneVPSViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneVPSViews.swift; sourceTree = "<group>"; };
 		0CB7F2B1E3F631564873A43D /* SystemMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMonitor.swift; sourceTree = "<group>"; };
 		0D9CEB5655FCA197D6B10A91 /* CoucouPhoneApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoucouPhoneApp.swift; sourceTree = "<group>"; };
@@ -304,6 +311,7 @@
 		28323DC20034A281F6829884 /* CloudProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudProbe.swift; sourceTree = "<group>"; };
 		2A1C4152EBDBD7C24CABFFD7 /* TurnSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnSnapshot.swift; sourceTree = "<group>"; };
 		2BE473FE97B0C8D3B97A7EC5 /* fr.louisraille.NotchBuddy.FanHelper.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = fr.louisraille.NotchBuddy.FanHelper.plist; sourceTree = "<group>"; };
+		2C17DA87558DB1AFC7D6AFD2 /* LoomifyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoomifyService.swift; sourceTree = "<group>"; };
 		2DDB9F31282D8D7797678BEA /* CoucouFanHelper */ = {isa = PBXFileReference; includeInIndex = 0; path = CoucouFanHelper; sourceTree = BUILT_PRODUCTS_DIR; };
 		2EF78999D68D56ADE4CEFBE2 /* StripePoller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StripePoller.swift; sourceTree = "<group>"; };
 		3104222B3F17BA5E8DEA5277 /* CalcomPoller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcomPoller.swift; sourceTree = "<group>"; };
@@ -373,6 +381,7 @@
 		C581F7B1A9F14B281B60063E /* GreetingCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GreetingCanvasView.swift; sourceTree = "<group>"; };
 		C6BE80EE596A5757028A3B30 /* FanHelperProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FanHelperProtocol.swift; sourceTree = "<group>"; };
 		CBB947B5DDC815EFB1A038B6 /* ClaudeCodeChat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeCodeChat.swift; sourceTree = "<group>"; };
+		CEF9345D75EF43CFDFB61DA8 /* LoomifyParsing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoomifyParsing.swift; sourceTree = "<group>"; };
 		D1244674D5A60D491B8E1025 /* LRCLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LRCLine.swift; sourceTree = "<group>"; };
 		D710BD7834228045869D0184 /* IslandWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslandWindowController.swift; sourceTree = "<group>"; };
 		D797CC384B5BC70D34F121BC /* ChatMarkdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMarkdown.swift; sourceTree = "<group>"; };
@@ -444,6 +453,9 @@
 				FA02B08886939FF6FE0475DD /* IslandViewContent.swift */,
 				D710BD7834228045869D0184 /* IslandWindowController.swift */,
 				8790ACE9F73BD74640A0F20C /* LocalChat.swift */,
+				CEF9345D75EF43CFDFB61DA8 /* LoomifyParsing.swift */,
+				2C17DA87558DB1AFC7D6AFD2 /* LoomifyService.swift */,
+				0B9960819FA9C7D43272236E /* LoomifyViews.swift */,
 				D1244674D5A60D491B8E1025 /* LRCLine.swift */,
 				8964A7E3F3EA77E0292B8488 /* MenuBarTray.swift */,
 				A136C9A3D438D572F4067F62 /* MenuBarTrayView.swift */,
@@ -817,6 +829,9 @@
 				EC6237D7A8E1B2F785DEFE4A /* LRCLine.swift in Sources */,
 				C3ECA730677F467D28910AF6 /* LiveActivityRelay.swift in Sources */,
 				6D158183870434FEDF07E050 /* LocalChat.swift in Sources */,
+				F09D4C95AD250B40DE21D4EA /* LoomifyParsing.swift in Sources */,
+				79450BDFEE7099932D62FE7A /* LoomifyService.swift in Sources */,
+				DFFB890BDBA9094295346D2F /* LoomifyViews.swift in Sources */,
 				9D5B37B0E97AD9D9937DDF08 /* MenuBarTray.swift in Sources */,
 				E86288F946BAEE454CADC037 /* MenuBarTrayView.swift in Sources */,
 				D34D31C27D97D23C0441D1BE /* MochiActivityState.swift in Sources */,
@@ -952,6 +967,9 @@
 				8E35C2C74A05CEB5E4230D34 /* LRCLine.swift in Sources */,
 				F28275101D83F121E582B1B1 /* LiveActivityRelay.swift in Sources */,
 				E81575CE4433C6F88E424A8F /* LocalChat.swift in Sources */,
+				C12423C8ED0B41BA834ED4A5 /* LoomifyParsing.swift in Sources */,
+				4F34A9A7A3F601A03BEE1285 /* LoomifyService.swift in Sources */,
+				B6909F6A57E936761E44B32D /* LoomifyViews.swift in Sources */,
 				93F898E4EB66212FA8FF8DEA /* MenuBarTray.swift in Sources */,
 				F0612DC6AAFFBC7EB8AE722F /* MenuBarTrayView.swift in Sources */,
 				82E72E0AFCAB192D98AB2004 /* MochiActivityState.swift in Sources */,
