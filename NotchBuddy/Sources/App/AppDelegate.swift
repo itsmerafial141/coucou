@@ -127,6 +127,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = VenturoBotMonitor.shared
         _ = PhoneVPSMonitor.shared
         _ = LoomifyService.shared
+        _ = SupersetService.shared
         _ = DiscordService.shared
         #endif
     }

@@ -97,6 +97,8 @@ enum PillCatalog {
               category: .service,   subtitle: "Integration",  source: .n8n, githubOnly: true),
         .init(id: "integration_loomify", name: "Loomify",     color: "#A855F7",
               category: .service,   subtitle: "Integration",  source: .n8n, githubOnly: true),
+        .init(id: "integration_superset", name: "Superset",  color: "#FB923C",
+              category: .service,   subtitle: "Integration",  source: .n8n, githubOnly: true),
     ]
 
     /// Pills available in the current build target.

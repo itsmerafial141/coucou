@@ -58,6 +58,12 @@ struct IslandViewContent: View {
             #else
             EmptyView()
             #endif
+        case .superset:
+            #if !APPSTORE
+            SupersetListView(state: state)
+            #else
+            EmptyView()
+            #endif
         case .discord:
             #if !APPSTORE
             DiscordFullView(state: state)
@@ -167,7 +173,8 @@ struct OverviewView: View {
                 let hideJumpButton = showingN8nDetail || activeDiffId != nil
                 #endif
                 if !hideJumpButton && agent?.id != "integration_venturo" && agent?.id != "integration_discord"
-                    && agent?.id != "integration_phonevps" && agent?.id != "integration_loomify" {
+                    && agent?.id != "integration_phonevps" && agent?.id != "integration_loomify"
+                    && agent?.id != "integration_superset" {
                     Button(action: { openAgentTarget(agent) }) {
                         Image(systemName: "arrow.up.right")
                             .font(.system(size: 8, weight: .medium))
@@ -300,6 +307,10 @@ struct OverviewView: View {
         case "integration_loomify":
             #if !APPSTORE
             LoomifyService.shared.open()
+            #endif
+        case "integration_superset":
+            #if !APPSTORE
+            SupersetService.shared.open()
             #endif
         case "integration_discord":
             #if !APPSTORE
@@ -1770,6 +1781,12 @@ struct IntegrationCardView: View {
             #else
             return false
             #endif
+        case "integration_superset":
+            #if !APPSTORE
+            return SupersetService.shared.isInstalled
+            #else
+            return false
+            #endif
         case "integration_discord":
             #if !APPSTORE
             return DiscordService.shared.isInstalled
@@ -1885,6 +1902,14 @@ struct IntegrationCardView: View {
             if case .failed = d.connection { return Color(hex: "#F4505E") }
             return (d.unread ?? 0) > 0 ? Color(hex: "#5865F2") : Color(hex: "#22C55E")
         }
+        if task.id == SupersetService.pillId {
+            switch SupersetService.shared.overall {
+            case .ok:       return Color(hex: "#22C55E")
+            case .working:  return Color(hex: "#3B82F6")
+            case .needsYou: return Color(hex: "#F5A524")
+            case .off:      return Color(hex: "#6B7079")
+            }
+        }
         if task.id == LoomifyService.pillId {
             switch LoomifyService.shared.overall {
             case .ok:      return Color(hex: "#22C55E")
@@ -1935,6 +1960,14 @@ struct IntegrationCardView: View {
             if let me = d.myVoice { return "In voice · \(d.channel(me.channelId)?.name ?? "")" }
             if let n = d.unread { return n == 0 ? "No unread" : "\(n) unread" }
             return "Discord not running"
+        }
+        if task.id == SupersetService.pillId {
+            let ss = SupersetService.shared
+            if !ss.isInstalled { return "Superset not found" }
+            if let e = ss.error { return e }
+            let c = ss.counts
+            if c.needsYou > 0 { return "\(c.needsYou) need you" }
+            return c.working > 0 ? "\(c.working) working" : "\(ss.workspaces.count) workspaces"
         }
         if task.id == LoomifyService.pillId {
             let lf = LoomifyService.shared
@@ -2087,6 +2120,11 @@ struct IntegrationCardView: View {
         } else if task.id == "integration_loomify" {
             #if !APPSTORE
             LoomifyCardView(state: appState)
+                .transition(.opacity)
+            #endif
+        } else if task.id == "integration_superset" {
+            #if !APPSTORE
+            SupersetCardView(state: appState)
                 .transition(.opacity)
             #endif
         } else if task.id == "integration_discord" {
@@ -2275,7 +2313,8 @@ struct IntegrationCardView: View {
                        && task.id != "integration_venturo"
                        && task.id != "integration_discord"
                        && task.id != "integration_phonevps"
-                       && task.id != "integration_loomify" {
+                       && task.id != "integration_loomify"
+                       && task.id != "integration_superset" {
                         Button("Settings…") {
                             let section: String
                             switch PillCatalog.definition(for: task.id)?.category {

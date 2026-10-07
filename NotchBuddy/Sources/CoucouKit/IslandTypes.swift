@@ -12,7 +12,7 @@ enum IslandView: String, CaseIterable {
     case overview, empty, approval, question, error, finished
     case confused, upload, uploading, choose, mail, prompt
     case searching, result, note, settings, greeting, wardrobe
-    case menuBar, spotify, venturo, discord, clipboard, system, phonevps, loomify
+    case menuBar, spotify, venturo, discord, clipboard, system, phonevps, loomify, superset
 }
 
 // MARK: - Bot State
@@ -206,6 +206,8 @@ enum IslandConst {
         .phonevps:  ViewLayout(height: 264, botX: 64,  botY: 148, botDiameter: 54, agentMode: .none),
         // Loomify kanban: Mochi at the top of the 116pt left gutter, project info below (see LoomifyBoardView)
         .loomify:   ViewLayout(height: 276, botX: 64,  botY: 86,  botDiameter: 54, agentMode: .none),
+        // Superset workspaces: same frame as the Loomify board (see SupersetListView)
+        .superset:  ViewLayout(height: 276, botX: 64,  botY: 86,  botDiameter: 54, agentMode: .none),
         // Discord feed / voice: Mochi in the 116pt left gutter (see DiscordFullView)
         .discord:   ViewLayout(height: 230, botX: 64,  botY: 131, botDiameter: 54, agentMode: .none),
     ]

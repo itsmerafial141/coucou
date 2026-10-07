@@ -32,6 +32,7 @@
 		18D47AE663EB96BE5638D5F7 /* ClaudePlanCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4263B550838CC5614569D13 /* ClaudePlanCardView.swift */; };
 		1969590AFEE6CB21404346F1 /* CalcomPoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3104222B3F17BA5E8DEA5277 /* CalcomPoller.swift */; };
 		19DFB4A4824BBF88ED98D2AE /* ClaudeCodeChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBB947B5DDC815EFB1A038B6 /* ClaudeCodeChat.swift */; };
+		1E1299808668E8E27ED46C32 /* SupersetService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1329B5F6610298967A3292 /* SupersetService.swift */; };
 		1E55440B97C640993E93D04D /* DiffEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B32FB972D02162720E566674 /* DiffEngine.swift */; };
 		1EAFEE80A8066B77F9410025 /* ShortcutsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62CF42AE7611EF212CA0458F /* ShortcutsSettingsView.swift */; };
 		1F11EC4E6F604C612A1ADAD1 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2E4F18AA940EFF7E047B9F7 /* AppState.swift */; };
@@ -58,6 +59,7 @@
 		38BED0B0BDC4A15A9411199D /* SystemMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB7F2B1E3F631564873A43D /* SystemMonitor.swift */; };
 		38EA19EC7B568753AF8CE870 /* VenturoBotMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = E71A0CDBD6166238CB248A68 /* VenturoBotMonitor.swift */; };
 		38EEB2D3A6EC538958D92575 /* GitHubPulse.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8D3AD61802A32C4833F3EDA /* GitHubPulse.swift */; };
+		3C5459776A1417A06F4E3B82 /* SupersetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEBC76C1A11CE1C332D574CE /* SupersetData.swift */; };
 		3DB6C3C7103D7CD969FC3825 /* PhoneVPSMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41D5247F73ED415729412424 /* PhoneVPSMonitor.swift */; };
 		3F0C9FFE63FEAC39DD9C2212 /* DiscordService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31720A18CA6F97E7F65D2540 /* DiscordService.swift */; };
 		4117E7C8AA231AAE36E7509D /* UploadCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B241B043223AFBBFB7418A5E /* UploadCanvasView.swift */; };
@@ -135,6 +137,7 @@
 		908043F62E2C31F5FBC0A0C4 /* ShortcutsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62CF42AE7611EF212CA0458F /* ShortcutsSettingsView.swift */; };
 		922C2F325418A1814BB2B7A0 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505CFBB6414C3C3B47CF89FB /* main.swift */; };
 		924CE1172B5572DA3E45A7C9 /* ColorHex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ACB4350729C6513824D1ADF /* ColorHex.swift */; };
+		926C9DE8039BC1F0023E4546 /* SupersetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEBC76C1A11CE1C332D574CE /* SupersetData.swift */; };
 		92C073175293C76F4C93C66D /* FileStackLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EB03F042B25E1A5D82F85B3 /* FileStackLogic.swift */; };
 		9321A0D4BEC32E262D4A85ED /* IslandScreenGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9466FDE02C9B3FB4EF01DFF8 /* IslandScreenGeometry.swift */; };
 		93F898E4EB66212FA8FF8DEA /* MenuBarTray.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8964A7E3F3EA77E0292B8488 /* MenuBarTray.swift */; };
@@ -160,8 +163,10 @@
 		B2D86BE268D6F4C86BD0C446 /* ChatMarkdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = D797CC384B5BC70D34F121BC /* ChatMarkdown.swift */; };
 		B314F09AD7924387D0E04B45 /* BotEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66E6F5FC81429871B6F766A8 /* BotEngine.swift */; };
 		B3EC9CF3C8BD629C3530E8F1 /* sounds in Resources */ = {isa = PBXBuildFile; fileRef = C066E2B991AA4F56B2724263 /* sounds */; };
+		B4C0CCFA2D7B693E4C958499 /* SupersetService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1329B5F6610298967A3292 /* SupersetService.swift */; };
 		B605F976F4141435F27CF266 /* IslandRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A1A8206F73376F4CAF2057 /* IslandRootView.swift */; };
 		B6909F6A57E936761E44B32D /* LoomifyViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B9960819FA9C7D43272236E /* LoomifyViews.swift */; };
+		B6F41B53109CB79C13BC716F /* SupersetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFCA45E0CAC9E7126A52BA21 /* SupersetViews.swift */; };
 		B71AB22E012C7217E126DE05 /* PhoneVPSViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9C79FE1B04D86DC1C585AC /* PhoneVPSViews.swift */; };
 		B733A76DD197F6D6D949284C /* HotKeyCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1218B86E249691AF44F819AC /* HotKeyCenter.swift */; };
 		B7C93262AA9D5DEAA0B79C7C /* MacStubs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B66D0C664FB9FF74517AAF5 /* MacStubs.swift */; };
@@ -193,6 +198,7 @@
 		CE5EBAEC47402D4987EA86C7 /* MacStubs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B66D0C664FB9FF74517AAF5 /* MacStubs.swift */; };
 		D092D0D597D1CBCE6B775B5E /* ServicePublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F0C229BD085D76EB3DD94DF /* ServicePublisher.swift */; };
 		D19FA3394EE99B34184684ED /* MochiWardrobe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79A7807ADD0963FF260D1FAD /* MochiWardrobe.swift */; };
+		D22186C52922F224D0474E79 /* SupersetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFCA45E0CAC9E7126A52BA21 /* SupersetViews.swift */; };
 		D34D31C27D97D23C0441D1BE /* MochiActivityState.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE18399D1CD69468CCF57966 /* MochiActivityState.swift */; };
 		D45D9C8EAF67FC2F46E9F352 /* CloudProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28323DC20034A281F6829884 /* CloudProbe.swift */; };
 		D463AA5B161B3021DAA74428 /* PhoneVPSMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41D5247F73ED415729412424 /* PhoneVPSMonitor.swift */; };
@@ -309,6 +315,7 @@
 		192844E7299DEED5C2372067 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		1BE21C2B315D37AA70ED45E9 /* SoundEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundEngine.swift; sourceTree = "<group>"; };
 		28323DC20034A281F6829884 /* CloudProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudProbe.swift; sourceTree = "<group>"; };
+		2A1329B5F6610298967A3292 /* SupersetService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupersetService.swift; sourceTree = "<group>"; };
 		2A1C4152EBDBD7C24CABFFD7 /* TurnSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnSnapshot.swift; sourceTree = "<group>"; };
 		2BE473FE97B0C8D3B97A7EC5 /* fr.louisraille.NotchBuddy.FanHelper.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = fr.louisraille.NotchBuddy.FanHelper.plist; sourceTree = "<group>"; };
 		2C17DA87558DB1AFC7D6AFD2 /* LoomifyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoomifyService.swift; sourceTree = "<group>"; };
@@ -363,6 +370,7 @@
 		A83D5410BD030B243ADDCFF4 /* ClaudeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeService.swift; sourceTree = "<group>"; };
 		AD3CB25D7EC123A424B250A9 /* FileStackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileStackView.swift; sourceTree = "<group>"; };
 		ADA6A002ABEC0CC57667FBE0 /* MochiLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MochiLiveActivity.swift; sourceTree = "<group>"; };
+		AFCA45E0CAC9E7126A52BA21 /* SupersetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupersetViews.swift; sourceTree = "<group>"; };
 		B1DDC96E7967032F5D0BD585 /* DesktopMochi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopMochi.swift; sourceTree = "<group>"; };
 		B241B043223AFBBFB7418A5E /* UploadCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadCanvasView.swift; sourceTree = "<group>"; };
 		B2FDED98F7F6C755A72C97A3 /* SafeWebURL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeWebURL.swift; sourceTree = "<group>"; };
@@ -372,6 +380,7 @@
 		B89DA1A0C21AE3535A1760BB /* N8nPoller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = N8nPoller.swift; sourceTree = "<group>"; };
 		BD1F9B9AE497207E42BD6593 /* ClipboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardView.swift; sourceTree = "<group>"; };
 		BE03E03D1804B0B92C5C2DAD /* NotionPoller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotionPoller.swift; sourceTree = "<group>"; };
+		BEBC76C1A11CE1C332D574CE /* SupersetData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupersetData.swift; sourceTree = "<group>"; };
 		BFE88A53AEAA637F866D479D /* ChatMarkdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMarkdownView.swift; sourceTree = "<group>"; };
 		C066E2B991AA4F56B2724263 /* sounds */ = {isa = PBXFileReference; lastKnownFileType = folder; name = sounds; path = Resources/sounds; sourceTree = SOURCE_ROOT; };
 		C086E1932F86B9C2B559BE03 /* DesktopMochiLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopMochiLogic.swift; sourceTree = "<group>"; };
@@ -476,6 +485,9 @@
 				6A9E6EB7C8468A8339CF6A5C /* SpotifyController.swift */,
 				914A792788D403F836BEB570 /* SpotifyViews.swift */,
 				2EF78999D68D56ADE4CEFBE2 /* StripePoller.swift */,
+				BEBC76C1A11CE1C332D574CE /* SupersetData.swift */,
+				2A1329B5F6610298967A3292 /* SupersetService.swift */,
+				AFCA45E0CAC9E7126A52BA21 /* SupersetViews.swift */,
 				0CB7F2B1E3F631564873A43D /* SystemMonitor.swift */,
 				E2C51F63C9E8C922A6550E86 /* SystemStatsView.swift */,
 				B241B043223AFBBFB7418A5E /* UploadCanvasView.swift */,
@@ -859,6 +871,9 @@
 				E2414533EDC7565286141198 /* SpotifyController.swift in Sources */,
 				4B99E2AD54926078AB087B43 /* SpotifyViews.swift in Sources */,
 				1558BB00C530B721172F6E65 /* StripePoller.swift in Sources */,
+				926C9DE8039BC1F0023E4546 /* SupersetData.swift in Sources */,
+				B4C0CCFA2D7B693E4C958499 /* SupersetService.swift in Sources */,
+				B6F41B53109CB79C13BC716F /* SupersetViews.swift in Sources */,
 				38BED0B0BDC4A15A9411199D /* SystemMonitor.swift in Sources */,
 				D76D04657B91B71516FE6A81 /* SystemStatsView.swift in Sources */,
 				0408FE7F86EBEE61CAED32DA /* TurnRecorder.swift in Sources */,
@@ -997,6 +1012,9 @@
 				2540E4198492CC2B9237ED99 /* SpotifyController.swift in Sources */,
 				03538CF0E693300A14029EDE /* SpotifyViews.swift in Sources */,
 				E4B9986674F4D425826F15A8 /* StripePoller.swift in Sources */,
+				3C5459776A1417A06F4E3B82 /* SupersetData.swift in Sources */,
+				1E1299808668E8E27ED46C32 /* SupersetService.swift in Sources */,
+				D22186C52922F224D0474E79 /* SupersetViews.swift in Sources */,
 				56DB9CECDF4CCBDC223B4236 /* SystemMonitor.swift in Sources */,
 				7EA662EE4E58B99FCEAFA9C6 /* SystemStatsView.swift in Sources */,
 				CE0A1BD64DF3E08D200691A6 /* TurnRecorder.swift in Sources */,
