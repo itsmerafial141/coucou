@@ -616,7 +616,6 @@ final class AppState: ObservableObject {
 
     /// Toggle a catalog pill on/off.
     /// mainPillId: never toggleable (change via the Main picker first).
-    /// Max 4 non-main pills active at once.
     func toggleIntegration(_ id: String) {
         guard id != mainPillId else { return }
         guard PillCatalog.available.contains(where: { $0.id == id }) else { return }
@@ -625,7 +624,6 @@ final class AppState: ObservableObject {
             tasks.removeAll { $0.id == id }
             if focusId == id { focusId = mainPillId }
         } else {
-            guard activeIntegrations.count < 4 else { return }
             activeIntegrations.insert(id)
             if let def = PillCatalog.available.first(where: { $0.id == id }),
                !tasks.contains(where: { $0.id == id }) {

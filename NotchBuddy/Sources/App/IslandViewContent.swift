@@ -3901,50 +3901,58 @@ struct AgentPillsView: View {
         state.tasks.filter { $0.id != state.focusId }
     }
 
-    private var displayTasks: [AgentTask] {
-        Array(others.prefix(4))
-    }
-
     private let columns = [
         GridItem(.flexible(), spacing: 4),
         GridItem(.flexible(), spacing: 4)
     ]
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 0)
-            LazyVGrid(columns: columns, spacing: 4) {
-                ForEach(displayTasks) { task in
-                    #if !APPSTORE
-                    if task.id == "integration_music" || task.id == SpotifyController.pillId {
-                        MusicPill(task: task, state: state, swapping: $swapping) {
-                            swapping = true
-                            state.setFocus(task.id)
-                            SoundEngine.shared.play("blip")
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { swapping = false }
-                        }
-                    } else {
-                        AgentPill(task: task, state: state, swapping: $swapping) {
-                            swapping = true
-                            state.setFocus(task.id)
-                            SoundEngine.shared.play("blip")
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { swapping = false }
-                        }
+        // Up to 4 pills sit centred like before; more scroll inside the same card (the island keeps its height).
+        if others.count > 4 {
+            ScrollView(.vertical) {
+                grid.padding(.vertical, 8)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                grid
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private var grid: some View {
+        LazyVGrid(columns: columns, spacing: 4) {
+            ForEach(others) { task in
+                #if !APPSTORE
+                if task.id == "integration_music" || task.id == SpotifyController.pillId {
+                    MusicPill(task: task, state: state, swapping: $swapping) {
+                        swapping = true
+                        state.setFocus(task.id)
+                        SoundEngine.shared.play("blip")
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { swapping = false }
                     }
-                    #else
+                } else {
                     AgentPill(task: task, state: state, swapping: $swapping) {
                         swapping = true
                         state.setFocus(task.id)
                         SoundEngine.shared.play("blip")
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { swapping = false }
                     }
-                    #endif
                 }
+                #else
+                AgentPill(task: task, state: state, swapping: $swapping) {
+                    swapping = true
+                    state.setFocus(task.id)
+                    SoundEngine.shared.play("blip")
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { swapping = false }
+                }
+                #endif
             }
-            .padding(.horizontal, 8)
-            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 8)
     }
 }
 
@@ -4252,6 +4260,21 @@ struct PillBadgeView: View {
     }
 }
 
+/// "+N" in the last slot of a mini Mochi grid/column when more pills are active than it holds.
+struct MorePill: View {
+    let count: Int
+    let size: CGFloat
+
+    var body: some View {
+        Text("+\(count)")
+            .font(.system(size: size * 0.5, weight: .bold, design: .rounded))
+            .foregroundColor(Color(hex: "#C5C8CD"))
+            .minimumScaleFactor(0.6)
+            .frame(width: size, height: size)
+            .background(Circle().fill(Color(hex: "#2A2D32")))
+    }
+}
+
 // MARK: - Column agents (right side of non-overview views)
 
 struct ColumnAgentsView: View {
@@ -4263,12 +4286,17 @@ struct ColumnAgentsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ForEach(Array(others.prefix(4).enumerated()), id: \.1.id) { idx, task in
+            let shown = others.count > 4 ? Array(others.prefix(3)) : others
+            ForEach(Array(shown.enumerated()), id: \.1.id) { idx, task in
                 MiniBotCanvasView(task: task)
                     .frame(width: 16 / 0.6, height: 16 / 0.6)
                     .frame(width: 16, height: 16)
                     .position(x: 0, y: CGFloat(50 + idx * 24))
                     .animation(.spring(response: 0.5, dampingFraction: 0.72).delay(Double(idx) * 0.035), value: idx)
+            }
+            if others.count > 4 {
+                MorePill(count: others.count - 3, size: 16)
+                    .position(x: 0, y: CGFloat(50 + 3 * 24))
             }
         }
     }

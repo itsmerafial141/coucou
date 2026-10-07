@@ -648,18 +648,21 @@ struct CompactMiniGrid: View {
     @ObservedObject var state: AppState
 
     private var others: [AgentTask] {
-        Array(state.tasks.filter { $0.id != state.focusId }.prefix(4))
+        state.tasks.filter { $0.id != state.focusId }
     }
 
     var body: some View {
         let cols = [GridItem(.fixed(12), spacing: 4), GridItem(.fixed(12), spacing: 4)]
+        // 2×2 holds 4 faces; with more, the 4th slot becomes "+N".
+        let more = others.count > 4
         LazyVGrid(columns: cols, spacing: 4) {
-            ForEach(others) { task in
+            ForEach(more ? Array(others.prefix(3)) : others) { task in
                 // 12 pt faces in the resting island, always on screen: 15 fps is enough.
                 MiniBotCanvasView(task: task, fps: 15)
                     .frame(width: 12 / 0.6, height: 12 / 0.6)
                     .frame(width: 12, height: 12, alignment: .center)
             }
+            if more { MorePill(count: others.count - 3, size: 12) }
         }
         .frame(width: 28, height: 28)
     }
