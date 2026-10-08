@@ -139,6 +139,53 @@ enum Superset {
         return "\(s / 86_400)d"
     }
 
+    // MARK: - Terminal prompt (an agent asking for a choice)
+
+    struct Prompt: Equatable {
+        struct Option: Equatable { let key: String; let label: String }
+        let question: String
+        let detail: [String]       // tool / command lines shown above the question
+        let options: [Option]
+    }
+
+    /// The numbered choice an agent is waiting on, read from the bottom of its terminal screen.
+    /// Claude Code, Codex and Gemini all draw "1. Yes / 2. … / 3. No" and take the digit as the answer.
+    /// ponytail: screen scraping; nil when no 1…n block sits in the last 30 lines.
+    static func prompt(fromScreen screen: String) -> Prompt? {
+        let frame = CharacterSet(charactersIn: "│┃║╭╮╰╯")
+        let lines = screen.replacingOccurrences(of: "\u{00A0}", with: " ")
+            .components(separatedBy: "\n").suffix(30)
+            .map { $0.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: frame).trimmingCharacters(in: .whitespaces) }
+        func option(_ line: String) -> Prompt.Option? {
+            let markers = CharacterSet(charactersIn: "❯›>●○▌▸*").union(.whitespaces)
+            let l = String(line.unicodeScalars.drop { markers.contains($0) })
+            guard let dot = l.firstIndex(where: { $0 == "." || $0 == ")" }),
+                  let n = Int(l[..<dot]), (1...9).contains(n) else { return nil }
+            let label = l[l.index(after: dot)...].trimmingCharacters(in: .whitespaces)
+            return label.isEmpty ? nil : Prompt.Option(key: String(n), label: label)
+        }
+        // The last "1." whose following options run 2, 3, … without a gap.
+        guard let first = lines.indices.last(where: { option(lines[$0])?.key == "1" }) else { return nil }
+        var options: [Prompt.Option] = []
+        for line in lines[first...] {
+            guard let o = option(line) else { if line.isEmpty || options.isEmpty { continue } else { break } }
+            guard o.key == String(options.count + 1) else { break }
+            options.append(o)
+        }
+        guard options.count >= 2 else { return nil }
+        // Context: the non-empty lines just above the options, up to a rule, an older list or 4 lines.
+        var above: [String] = []
+        for line in lines[..<first].reversed() {
+            if line.unicodeScalars.contains(where: { "─━═".unicodeScalars.contains($0) }) && line.count > 8 { break }
+            if option(line) != nil { break }
+            if line.isEmpty { continue }
+            above.insert(line, at: 0)
+            if above.count == 4 { break }
+        }
+        let question = above.popLast() ?? "Choose an option"
+        return Prompt(question: question, detail: above, options: options)
+    }
+
     // MARK: - SQLite helpers
 
     private static func rows<T>(_ db: OpaquePointer?, _ sql: String, _ map: (OpaquePointer?) -> T) -> [T]? {

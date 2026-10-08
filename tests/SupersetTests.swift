@@ -69,6 +69,34 @@ enum SupersetTests {
         check("ago", Superset.ago(now, now: now) == "now" && Superset.ago(now - 300, now: now) == "5m"
               && Superset.ago(now - 7200, now: now) == "2h" && Superset.ago(now - 172_800, now: now) == "2d")
 
+        // Terminal prompts.
+        let claudeBox = """
+        ⏺ I'll clean the build folder.
+        ╭──────────────────────────────────────────────╮
+        │ Bash command                                 │
+        │                                              │
+        │   rm -rf build                               │
+        │   Remove the build folder                    │
+        │                                              │
+        │ Do you want to proceed?                      │
+        │ ❯ 1. Yes                                     │
+        │   2. Yes, and don't ask again for rm commands │
+        │   3. No, and tell Claude what to do differently (esc) │
+        ╰──────────────────────────────────────────────╯
+        """
+        let p = Superset.prompt(fromScreen: claudeBox)
+        check("claude box prompt: question", p?.question == "Do you want to proceed?")
+        check("claude box prompt: detail", p?.detail == ["Bash command", "rm -rf build", "Remove the build folder"])
+        check("claude box prompt: options", p?.options.map(\.key) == ["1", "2", "3"] && p?.options.first?.label == "Yes")
+        let gemini = "Some earlier output\n 1. an old list item\n\n Allow execution of: 'npm test'?\n\n ● 1. Allow once\n   2. Allow for this session\n   3. No, suggest changes (esc)\n"
+        let g = Superset.prompt(fromScreen: gemini)
+        check("last 1… block wins", g?.options.map(\.label) == ["Allow once", "Allow for this session", "No, suggest changes (esc)"])
+        check("gemini question", g?.question == "Allow execution of: 'npm test'?")
+        check("nbsp prompt line ignored", Superset.prompt(fromScreen: "────────\n❯\u{00A0}\n────────\n  bypass permissions on") == nil)
+        check("a lone 1. is not a prompt", Superset.prompt(fromScreen: "Plan:\n1. do it\nok") == nil)
+        check("broken numbering stops the block",
+              Superset.prompt(fromScreen: "Pick\n1. A\n2. B\n4. D")?.options.map(\.key) == ["1", "2"])
+
         if failures > 0 { print("\(failures) failure(s)"); exit(1) }
         print("superset: ok")
     }

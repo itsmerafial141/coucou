@@ -189,9 +189,33 @@ struct SupersetListView: View {
 private struct WorkspaceRow: View {
     let workspace: Superset.Workspace
     @ObservedObject var ss: SupersetService
+    @ObservedObject private var state = AppState.shared
     @State private var hover = false
+    @State private var replying = false
+    @State private var draft = ""
+    @FocusState private var replyFocused: Bool
+
+    private var asking: [Superset.Agent] { workspace.agents.filter { $0.status == .needsYou } }
+    /// Reply goes to the agent that finished its turn most recently.
+    private var replyTarget: Superset.Agent? {
+        workspace.agents.filter { $0.status == .idle }.max { $0.lastEventAt < $1.lastEventAt }
+    }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            header
+            ForEach(asking, id: \.terminalId) { a in
+                PromptCard(workspace: workspace, agent: a, ss: ss, hook: ss.hookApproval(for: a))
+            }
+            if replying, let a = replyTarget { replyField(a) }
+        }
+        .padding(.horizontal, 8).padding(.vertical, 5)
+        .background(RoundedRectangle(cornerRadius: 9).fill(Color(hex: hover ? "#24201C" : "#1B1D21")))
+        .overlay(RoundedRectangle(cornerRadius: 9).stroke(hover ? Color(hex: SupersetService.colorHex).opacity(0.55) : Color(hex: "#23262B")))
+        .onHover { hover = $0 }
+    }
+
+    private var header: some View {
         HStack(spacing: 7) {
             Circle().fill(statusColor(workspace.status)).frame(width: 7, height: 7)
             VStack(alignment: .leading, spacing: 1) {
@@ -205,17 +229,42 @@ private struct WorkspaceRow: View {
                 }
             }
             Spacer(minLength: 4)
+            if (hover || replying), let a = replyTarget {
+                Button { replying.toggle(); replyFocused = replying } label: {
+                    Text(replying ? "Cancel" : "Reply").font(.system(size: 9.5, weight: .medium))
+                        .foregroundColor(Color(hex: SupersetService.colorHex))
+                        .padding(.horizontal, 6).frame(height: 16)
+                        .background(RoundedRectangle(cornerRadius: 5).fill(Color(hex: SupersetService.colorHex).opacity(0.12)))
+                }
+                .buttonStyle(.plain)
+                .help("Send a message to \(a.agentId) in this workspace")
+            }
             if let pr = workspace.pr { prBadge(pr) }
             Text(Superset.ago(workspace.active)).font(.system(size: 9.5)).foregroundColor(grey)
                 .frame(minWidth: 24, alignment: .trailing)
         }
-        .padding(.horizontal, 8).padding(.vertical, 5)
-        .background(RoundedRectangle(cornerRadius: 9).fill(Color(hex: hover ? "#24201C" : "#1B1D21")))
-        .overlay(RoundedRectangle(cornerRadius: 9).stroke(hover ? Color(hex: SupersetService.colorHex).opacity(0.55) : Color(hex: "#23262B")))
-        .contentShape(RoundedRectangle(cornerRadius: 9))
-        .onHover { hover = $0 }
+        .contentShape(Rectangle())
         .onTapGesture { ss.open(workspace) }
         .help("\(workspace.project) · \(statusLabel(workspace.status)) · click to open in Superset")
+    }
+
+    private func replyField(_ a: Superset.Agent) -> some View {
+        HStack(spacing: 6) {
+            TextField("Reply to \(a.agentId)…  ↩ send · esc close", text: $draft)
+                .textFieldStyle(.plain)
+                .font(.system(size: 10.5))
+                .foregroundColor(Color(hex: "#F5F6F8"))
+                .focused($replyFocused)
+                .onSubmit {
+                    let text = draft
+                    Task { if await ss.reply(workspace, a, text: text) { draft = ""; replying = false } }
+                }
+                .onExitCommand { replying = false }
+            if ss.sending.contains(a.terminalId) { ProgressView().controlSize(.mini) }
+        }
+        .padding(.horizontal, 8).frame(height: 24)
+        .background(RoundedRectangle(cornerRadius: 7).fill(Color(hex: "#141518")))
+        .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color(hex: SupersetService.colorHex).opacity(0.4)))
     }
 
     /// "claude · needs you", or "claude ×2 · working" with several agents.
@@ -245,5 +294,83 @@ private struct WorkspaceRow: View {
         .buttonStyle(.plain)
         .help("PR #\(pr.number): \(pr.title) · checks \(pr.checks)")
     }
+}
+
+// MARK: - Confirmation card (VS Code chat style): what the agent wants, then its choices
+
+private struct PromptCard: View {
+    let workspace: Superset.Workspace
+    let agent: Superset.Agent
+    @ObservedObject var ss: SupersetService
+    let hook: ApprovalInfo?
+
+    private var amber: Color { statusColor(.needsYou) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 5) {
+                Image(systemName: "hand.raised.fill").font(.system(size: 8.5)).foregroundColor(amber)
+                Text("\(agent.agentId) needs your confirmation").font(.system(size: 9.5, weight: .semibold)).foregroundColor(amber)
+                Spacer(minLength: 0)
+                if ss.sending.contains(agent.terminalId) { ProgressView().controlSize(.mini) }
+            }
+            if let hook {
+                detail([hook.tool, hook.command].uniqued())   // command falls back to the tool name
+                HStack(spacing: 5) {
+                    choice("Allow", primary: true) { ss.answerHook("allow") }
+                    choice("Always allow") { ss.answerHook("always") }
+                    choice("Deny", danger: true) { ss.answerHook("deny") }
+                }
+            } else if let p = ss.prompts[agent.terminalId] {
+                detail(p.detail)
+                Text(p.question).font(.system(size: 10.5, weight: .medium)).foregroundColor(Color(hex: "#F5F6F8"))
+                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 3) {
+                    ForEach(Array(p.options.enumerated()), id: \.offset) { i, o in
+                        choice("\(o.key)  \(o.label)", primary: i == 0, danger: i == p.options.count - 1 && p.options.count > 1,
+                               full: true) { ss.answer(workspace, agent, key: o.key) }
+                            .help(o.label)
+                    }
+                }
+            } else {
+                HStack(spacing: 8) {
+                    Text("Reading the prompt…").font(.system(size: 10)).foregroundColor(grey)
+                    Button("Open in Superset ↗") { ss.open(workspace) }
+                        .font(.system(size: 10)).foregroundColor(Color(hex: SupersetService.colorHex)).buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(8)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color(hex: "#141518")))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(amber.opacity(0.35)))
+        .disabled(ss.sending.contains(agent.terminalId))
+    }
+
+    @ViewBuilder private func detail(_ lines: [String]) -> some View {
+        if !lines.isEmpty {
+            VStack(alignment: .leading, spacing: 1) {
+                ForEach(Array(lines.suffix(3).enumerated()), id: \.offset) { _, l in
+                    Text(l).font(.system(size: 9.5, design: .monospaced)).foregroundColor(Color(hex: "#C5C8CD")).lineLimit(1)
+                }
+            }
+        }
+    }
+
+    private func choice(_ title: String, primary: Bool = false, danger: Bool = false, full: Bool = false,
+                        action: @escaping () -> Void) -> some View {
+        let tint = primary ? Color(hex: SupersetService.colorHex) : danger ? red : Color(hex: "#8E939C")
+        return Button(action: action) {
+            Text(title).font(.system(size: 10, weight: primary ? .semibold : .regular))
+                .foregroundColor(primary ? Color(hex: "#141518") : tint)
+                .lineLimit(1)
+                .padding(.horizontal, 8).frame(maxWidth: full ? .infinity : nil, minHeight: 20, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 6).fill(primary ? tint : tint.opacity(0.12)))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private extension Array where Element == String {
+    func uniqued() -> [String] { reduce(into: []) { if !$0.contains($1) { $0.append($1) } } }
 }
 #endif
