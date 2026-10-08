@@ -216,7 +216,11 @@ final class IslandWindowController: NSWindowController {
             self?.fsm.greetComplete()
         }
 
+        #if !APPSTORE
+        fsm.isHeldOpen = { AppState.shared.pendingApproval != nil || LoomifyService.shared.pendingNotice }
+        #else
         fsm.isHeldOpen = { AppState.shared.pendingApproval != nil }
+        #endif
     }
 
     // MARK: - 60 Hz polling loop
@@ -292,6 +296,9 @@ final class IslandWindowController: NSWindowController {
             if fsm.state == .coucou {
                 NotificationCenter.default.post(name: .greetingHover, object: nil)
             }
+            #if !APPSTORE
+            LoomifyService.shared.hovered()   // before the FSM: no longer held open, hover opens as usual
+            #endif
             fsm.mouseEntered()
         }
         if !inIsland && wasInIsland {
@@ -1245,7 +1252,9 @@ final class IslandPanel: NSPanel {
         } else {
             h = fixedH
         }
-        return CGRect(x: (frame.width - w) / 2, y: frame.height - h, width: w, height: h)
+        // The compact notice grows the island to the right only: same left edge, wider.
+        let extra = s.mode == .compact && s.compactNotice != nil ? compactNoticeExtra(nw: nw) : 0
+        return CGRect(x: (frame.width - w) / 2, y: frame.height - h, width: w + extra, height: h)
     }
 }
 
@@ -1296,6 +1305,12 @@ extension Notification.Name {
 }
 
 // MARK: - islandSize (takes real notch dimensions)
+
+/// Extra width of the compact island while it shows a notice, all of it right of the notch:
+/// up to 180 pt, never past the 720 pt panel (8 pt margin).
+func compactNoticeExtra(nw: CGFloat) -> CGFloat {
+    max(0, min(180, 720 / 2 - nw / 2 - 80 - 8))
+}
 
 func islandSize(mode: IslandMode, view: IslandView,
                 progress: Double = 0,

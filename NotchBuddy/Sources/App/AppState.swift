@@ -367,6 +367,11 @@ final class AppState: ObservableObject {
     // Pending approval request from Claude Code hook
     @Published var pendingApproval: ApprovalInfo? = nil
 
+    /// One-line summary the compact island shows to the right of the notch for a few seconds
+    /// (Loomify webhook events while the Loomify pill is focused).
+    struct CompactNotice: Equatable { var line: String; var more: Int; var colorHex: String }
+    @Published var compactNotice: CompactNotice? = nil
+
     // Pending AskUserQuestion from Claude Code hook
     @Published var pendingQuestion: AskQuestion? = nil
 

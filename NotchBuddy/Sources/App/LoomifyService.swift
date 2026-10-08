@@ -43,6 +43,11 @@ final class LoomifyService: ObservableObject {
     private var timer: Timer?
     private var listener: NWListener?
     private var refreshAgain = false
+    /// An event arrived while the Loomify pill was focused and the user hasn't hovered the island yet:
+    /// Mochi hops with a bell and the compact island stays out until the hover.
+    @Published private(set) var pendingNotice = false
+    private var noticeCount = 0
+    private var noticeTask: Task<Void, Never>?
     /// Tasks Coucou itself just moved or created: their webhook echo refreshes the board without a peek.
     private var localEdits: [Int: Date] = [:]
     private var cancellables = Set<AnyCancellable>()
@@ -336,9 +341,33 @@ final class LoomifyService: ObservableObject {
         if let i = state.tasks.firstIndex(where: { $0.id == Self.pillId }), state.focusId != Self.pillId {
             state.tasks[i].pillBadge = .news
         }
+        if state.focusId == Self.pillId && state.mode != .expanded { showNotice(line) }
         SoundEngine.shared.play("blip")
         NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.surprised)
         NotificationCenter.default.post(name: .hookReveal, object: nil)
+    }
+
+    /// Summary to the right of the notch for 5 s; the hop and bell last until `hovered()`.
+    private func showNotice(_ line: String) {
+        let state = AppState.shared
+        noticeCount = pendingNotice ? noticeCount + 1 : 1
+        pendingNotice = true
+        state.compactNotice = .init(line: line, more: noticeCount - 1, colorHex: Self.colorHex)
+        noticeTask?.cancel()
+        noticeTask = Task {
+            try? await Task.sleep(for: .seconds(5))
+            if !Task.isCancelled { AppState.shared.compactNotice = nil }
+        }
+    }
+
+    /// The mouse entered the island: the notification has been seen.
+    func hovered() {
+        guard pendingNotice else { return }
+        pendingNotice = false
+        noticeCount = 0
+        noticeTask?.cancel()
+        AppState.shared.compactNotice = nil
+        markSeen()
     }
 
     private func syncTask() {

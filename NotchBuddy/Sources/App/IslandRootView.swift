@@ -28,6 +28,15 @@ struct IslandContainer: View {
     // topRadius > 0 → convex expanded corners; < 0 → concave ear cutouts
     @State private var islandTopRadius: CGFloat = 0
     @State private var greetNotif: Bool = false
+    /// Compact notice: the island grows this much to the right of the notch (left edge stays put).
+    @State private var noticeExtra: CGFloat = 0
+    #if !APPSTORE
+    @ObservedObject private var loomify = LoomifyService.shared
+    /// Loomify event waiting for a hover while its pill is focused: glow, hop and bell on Mochi.
+    private var loomifyPending: Bool {
+        loomify.pendingNotice && state.mode == .compact && state.focusId == LoomifyService.pillId
+    }
+    #endif
 
     private let openSpring = Animation.spring(response: 0.5, dampingFraction: 0.72)
     private let closeEase  = Animation.timingCurve(0.45, 0, 0.2, 1, duration: 0.34)
@@ -54,7 +63,7 @@ struct IslandContainer: View {
 
         return ZStack(alignment: .topLeading) {
             // Black island shape
-            IslandShape(width: islandWidth, height: islandHeight,
+            IslandShape(width: islandWidth + noticeExtra, height: islandHeight,
                         cornerRadius: cornerRadius, topRadius: islandTopRadius)
                 .fill(Color.black)
 
@@ -91,6 +100,12 @@ struct IslandContainer: View {
                 }
             }
 
+            #if !APPSTORE
+            if loomifyPending {
+                LoomifyNoticeGlow(islandHeight: islandHeight).transition(.opacity)
+            }
+            #endif
+
             // Single BotPlacement — always alive in the view tree so spring animations
             // fire from the current position (e.g. choose at 60,101) when canvas deactivates.
             // Hidden during upload canvas or greeting (both draw their own Mochi).
@@ -103,14 +118,26 @@ struct IslandContainer: View {
                 }
                 .opacity(uploadActive || greetingActive ? 0 : 1)
                 .animation(.easeInOut(duration: 0.25), value: uploadActive || greetingActive)
+                #if !APPSTORE
+                .modifier(LoomifyHop(active: loomifyPending))
+                #endif
 
             CountdownBar(state: state, islandW: islandWidth)
 
             Group {
                 #if !APPSTORE
                 if state.mode == .compact {
-                    CompactRightEar(state: state, islandWidth: islandWidth, islandHeight: islandHeight)
-                        .transition(.opacity)
+                    if let notice = state.compactNotice {
+                        CompactNoticeLine(notice: notice, notchWidth: state.notchWidth,
+                                          islandWidth: islandWidth + noticeExtra, islandHeight: islandHeight)
+                            .transition(.opacity)
+                    } else {
+                        CompactRightEar(state: state, islandWidth: islandWidth, islandHeight: islandHeight)
+                            .transition(.opacity)
+                    }
+                }
+                if loomifyPending {
+                    LoomifyNoticeBell(islandHeight: islandHeight).transition(.scale.combined(with: .opacity))
                 }
                 #else
                 if state.mode == .compact {
@@ -122,8 +149,19 @@ struct IslandContainer: View {
                 #endif
             }
             .animation(.easeInOut(duration: 0.25), value: state.mode == .compact)
+            .animation(.easeInOut(duration: 0.25), value: state.compactNotice)
+            #if !APPSTORE
+            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: loomifyPending)
+            #endif
         }
-        .frame(width: islandWidth, height: islandHeight, alignment: .topLeading)
+        .frame(width: islandWidth + noticeExtra, height: islandHeight, alignment: .topLeading)
+        // Centered by the parent: shift by half the extra so only the right side grows.
+        .offset(x: noticeExtra / 2)
+        .onChange(of: state.compactNotice != nil && state.mode == .compact) { _, on in
+            withAnimation(on ? openSpring : closeEase) {
+                noticeExtra = on ? compactNoticeExtra(nw: state.notchWidth) : 0
+            }
+        }
         .onChange(of: state.mode) { oldMode, newMode in
             let shrinking = modeOrder(newMode) < modeOrder(oldMode)
             let anim = shrinking ? closeEase : openSpring

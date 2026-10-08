@@ -260,6 +260,93 @@ private struct CardView: View {
     }
 }
 
+// MARK: - Compact island notice (Loomify event while its pill is focused)
+// Mochi sits at x = 40, centred vertically, in the compact island (botPosition, .compact).
+
+private var noticePurple: Color { Color(hex: "#A855F7") }   // LoomifyService.colorHex
+
+/// Soft purple glow breathing behind Mochi until the hover.
+struct LoomifyNoticeGlow: View {
+    let islandHeight: CGFloat
+    @State private var bright = false
+
+    var body: some View {
+        Circle()
+            .fill(RadialGradient(colors: [noticePurple.opacity(0.65), noticePurple.opacity(0)],
+                                 center: .center, startRadius: 0, endRadius: islandHeight / 2))
+            .frame(width: islandHeight, height: islandHeight)
+            .opacity(bright ? 0.95 : 0.25)
+            .position(x: 40, y: islandHeight / 2)
+            .onAppear { withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) { bright = true } }
+            .allowsHitTesting(false)
+    }
+}
+
+/// The "news" bell on Mochi's top-right while the notice waits.
+struct LoomifyNoticeBell: View {
+    let islandHeight: CGFloat
+
+    var body: some View {
+        let d = min(20, max(0, islandHeight - 6))
+        Image(systemName: "bell.fill")
+            .font(.system(size: 5.5, weight: .bold)).foregroundColor(.white)
+            .frame(width: 10, height: 10)
+            .background(Circle().fill(noticePurple))
+            .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
+            .position(x: 40 + d / 2 - 1, y: islandHeight / 2 - d / 2 + 2)
+            .allowsHitTesting(false)
+    }
+}
+
+/// A small hop every 3 s while active. Driven by a trigger, so nothing runs when inactive.
+struct LoomifyHop: ViewModifier {
+    let active: Bool
+    @State private var tick = 0
+
+    func body(content: Content) -> some View {
+        content
+            .keyframeAnimator(initialValue: CGFloat(0), trigger: tick) { c, y in c.offset(y: y) } keyframes: { _ in
+                KeyframeTrack {
+                    SpringKeyframe(-5, duration: 0.2, spring: .snappy)
+                    SpringKeyframe(0, duration: 0.45, spring: .bouncy)
+                }
+            }
+            .task(id: active) {
+                guard active else { return }
+                while !Task.isCancelled {
+                    tick += 1
+                    try? await Task.sleep(for: .seconds(3))
+                }
+            }
+    }
+}
+
+/// One line right of the notch: colour dot, the event, "+N" for the ones before it.
+struct CompactNoticeLine: View {
+    let notice: AppState.CompactNotice
+    let notchWidth: CGFloat
+    let islandWidth: CGFloat
+    let islandHeight: CGFloat
+
+    var body: some View {
+        let x0 = 80 + notchWidth + 8                 // right ear starts 80 pt after the island's left edge + notch
+        let w = max(0, islandWidth - 14 - x0)
+        HStack(spacing: 5) {
+            Circle().fill(Color(hex: notice.colorHex)).frame(width: 5, height: 5)
+            Text(notice.line)
+                .font(.system(size: 11, weight: .medium)).foregroundColor(Color(hex: "#F5F6F8"))
+                .lineLimit(1).truncationMode(.tail)
+            if notice.more > 0 {
+                Text("+\(notice.more)").font(.system(size: 10.5, weight: .semibold))
+                    .foregroundColor(Color(hex: "#8E939C")).fixedSize()
+            }
+        }
+        .frame(width: w, alignment: .leading)
+        .position(x: x0 + w / 2, y: islandHeight / 2)
+        .allowsHitTesting(false)
+    }
+}
+
 // MARK: - Settings (Integrations)
 
 struct LoomifySettingsSection: View {
