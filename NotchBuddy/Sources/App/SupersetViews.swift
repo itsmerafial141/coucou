@@ -295,8 +295,9 @@ struct SupersetChatPane: View {
             ScrollViewReader { proxy in
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 6) {
-                        ForEach(Array(sent.suffix(3).enumerated()), id: \.offset) { _, m in
-                            HStack { Spacer(minLength: 40); mine(m) }
+                        // Same bubbles as Coucou's own chat: the user's messages on the right, the agent's reply as text.
+                        ForEach(Array(sent.enumerated()), id: \.offset) { _, m in
+                            ChatBubble(message: ChatMessage(role: .user, content: m))
                         }
                         let asking = agent.status == .needsYou
                         if asking {
@@ -307,9 +308,12 @@ struct SupersetChatPane: View {
                         // Claude: its last steps as points. Other agents, or a question whose choices
                         // couldn't be read: the end of the screen.
                         if !asking, !points.isEmpty {
-                            HStack { steps(points); Spacer(minLength: 24) }
+                            ChatBubble(message: ChatMessage(role: .assistant, content: points.map { "- \($0)" }.joined(separator: "\n")))
                         } else if !asking || unread, let screen = ss.screens[agent.terminalId], !screen.isEmpty {
                             HStack { theirs(screen); Spacer(minLength: 24) }
+                        }
+                        if agent.status == .working || ss.sending.contains(agent.terminalId) {
+                            HStack { TypingDotsView(); Spacer(minLength: 32) }
                         }
                         Color.clear.frame(height: 1).id("end")
                     }
@@ -369,31 +373,6 @@ struct SupersetChatPane: View {
         } else {
             label
         }
-    }
-
-    private func mine(_ m: String) -> some View {
-        Text(m).font(.system(size: 11.5)).foregroundColor(Color(hex: "#F5F6F8"))
-            .padding(.horizontal, 10).padding(.vertical, 6)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: SupersetService.colorHex).opacity(0.16)))
-            .textSelection(.enabled)
-    }
-
-    private func steps(_ points: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("\(agent.agentId) · \(statusLabel(agent.status).lowercased())").font(.system(size: 9.5)).foregroundColor(Color(hex: "#8E939C"))
-            ForEach(Array(points.enumerated()), id: \.offset) { i, p in
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Circle().fill(i == points.count - 1 ? statusColor(agent.status) : grey).frame(width: 4, height: 4)
-                        .alignmentGuide(.firstTextBaseline) { $0[.bottom] + 3 }
-                    Text(p).font(.system(size: 11)).foregroundColor(Color(hex: i == points.count - 1 ? "#F5F6F8" : "#C5C8CD"))
-                        .lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-        .padding(.horizontal, 10).padding(.vertical, 7)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.05)))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.06)))
-        .textSelection(.enabled)
     }
 
     private func theirs(_ screen: String) -> some View {
