@@ -97,9 +97,28 @@ enum SupersetTests {
         check("broken numbering stops the block",
               Superset.prompt(fromScreen: "Pick\n1. A\n2. B\n4. D")?.options.map(\.key) == ["1", "2"])
 
+        let picker = """
+        ☐ Test
+        Did the Coucou island open on its own?
+        ❯ 1. Yes, chat opened
+             The island expanded on this workspace's chat.
+          2. Opened, no choices
+             The island opened but said Reading the prompt.
+          3. Did not open
+             Nothing expanded.
+          4. Type something.
+        ────────────────────────────
+          5. Chat about this
+        Enter to select · ↑/↓ to navigate · Esc to cancel
+        """
+        let q = Superset.prompt(fromScreen: picker)
+        check("question picker: options past descriptions", q?.options.map(\.label) == ["Yes, chat opened", "Opened, no choices", "Did not open", "Type something."])
+        check("question picker: question", q?.question == "Did the Coucou island open on its own?")
+
         // Chat reply: end of the screen, without the input box and status line.
         let idle = "old line\n⏺ Added weekly_report\n  ✓ 14 tests pass   \n\n────────────────\n❯ \n────────────────\n  ? for shortcuts\n\n"
         check("tail drops the input box", Superset.screenTail(idle) == "old line\n⏺ Added weekly_report\n  ✓ 14 tests pass")
+        check("asking keeps the question", Superset.screenTail(idle, asking: true).hasSuffix("? for shortcuts"))
         check("tail keeps the last lines", Superset.screenTail("a\nb\nc\nd", lines: 2) == "c\nd")
         check("tail keeps a box higher up", Superset.screenTail("╭────╮\n│ hi │\n╰────╯\n1\n2\n3\n4\n5\n6\n7\n8").hasPrefix("╭"))
 

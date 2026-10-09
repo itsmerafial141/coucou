@@ -153,7 +153,8 @@ final class SupersetService: ObservableObject {
     /// Re-reads the end of the chatted agent's screen (the chat view calls it every 3 s while open).
     func refreshScreen() async {
         guard let (w, a) = chatTarget, let screen = await snapshot(w, a) else { return }
-        screens[a.terminalId] = Superset.screenTail(screen)
+        screens[a.terminalId] = Superset.screenTail(screen, lines: a.status == .needsYou ? 16 : 12,
+                                                    asking: a.status == .needsYou)
     }
 
     func sendChat(_ text: String) async -> Bool {

@@ -298,9 +298,13 @@ struct SupersetChatPane: View {
                         ForEach(Array(sent.suffix(3).enumerated()), id: \.offset) { _, m in
                             HStack { Spacer(minLength: 40); mine(m) }
                         }
-                        if agent.status == .needsYou {
+                        let asking = agent.status == .needsYou
+                        if asking {
                             PromptCard(workspace: workspace, agent: agent, ss: ss, hook: ss.hookApproval(for: agent))
-                        } else if let screen = ss.screens[agent.terminalId], !screen.isEmpty {
+                        }
+                        // While asking, the screen shows only when its choices couldn't be read.
+                        if !asking || (ss.prompts[agent.terminalId] == nil && ss.hookApproval(for: agent) == nil),
+                           let screen = ss.screens[agent.terminalId], !screen.isEmpty {
                             HStack { theirs(screen); Spacer(minLength: 24) }
                         }
                         Color.clear.frame(height: 1).id("end")

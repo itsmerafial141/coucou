@@ -167,8 +167,10 @@ enum Superset {
         // The last "1." whose following options run 2, 3, … without a gap.
         guard let first = lines.indices.last(where: { option(lines[$0])?.key == "1" }) else { return nil }
         var options: [Prompt.Option] = []
+        // Lines between options are their descriptions (Claude's question picker); a rule ends the block.
         for line in lines[first...] {
-            guard let o = option(line) else { if line.isEmpty || options.isEmpty { continue } else { break } }
+            if line.unicodeScalars.filter({ "─━═".unicodeScalars.contains($0) }).count > 8 { break }
+            guard let o = option(line) else { continue }
             guard o.key == String(options.count + 1) else { break }
             options.append(o)
         }
@@ -189,7 +191,8 @@ enum Superset {
     /// The agent's latest output for the notch chat: the end of its screen without the input box and
     /// status lines agents draw at the bottom (everything from the first rule in the last 8 lines).
     /// ponytail: screen scraping, so a reply is whatever the terminal shows, box drawing included.
-    static func screenTail(_ screen: String, lines limit: Int = 12) -> String {
+    /// `asking`: keep the bottom too, since that is where the agent draws its question.
+    static func screenTail(_ screen: String, lines limit: Int = 12, asking: Bool = false) -> String {
         func isRule(_ l: String) -> Bool {
             l.hasPrefix("╭") || l.hasPrefix("╰") || l.filter { "─━═".contains($0) }.count > 8
         }
@@ -197,7 +200,7 @@ enum Superset {
             .map { String($0.reversed().drop(while: \.isWhitespace).reversed()) }
         while lines.last?.isEmpty == true { lines.removeLast() }
         let window = max(0, lines.count - 8)
-        if let cut = lines[window...].firstIndex(where: { isRule($0.trimmingCharacters(in: .whitespaces)) }) {
+        if !asking, let cut = lines[window...].firstIndex(where: { isRule($0.trimmingCharacters(in: .whitespaces)) }) {
             lines.removeSubrange(cut...)
         }
         while lines.last?.isEmpty == true { lines.removeLast() }
