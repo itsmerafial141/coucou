@@ -97,6 +97,12 @@ enum SupersetTests {
         check("broken numbering stops the block",
               Superset.prompt(fromScreen: "Pick\n1. A\n2. B\n4. D")?.options.map(\.key) == ["1", "2"])
 
+        // Chat reply: end of the screen, without the input box and status line.
+        let idle = "old line\n⏺ Added weekly_report\n  ✓ 14 tests pass   \n\n────────────────\n❯ \n────────────────\n  ? for shortcuts\n\n"
+        check("tail drops the input box", Superset.screenTail(idle) == "old line\n⏺ Added weekly_report\n  ✓ 14 tests pass")
+        check("tail keeps the last lines", Superset.screenTail("a\nb\nc\nd", lines: 2) == "c\nd")
+        check("tail keeps a box higher up", Superset.screenTail("╭────╮\n│ hi │\n╰────╯\n1\n2\n3\n4\n5\n6\n7\n8").hasPrefix("╭"))
+
         if failures > 0 { print("\(failures) failure(s)"); exit(1) }
         print("superset: ok")
     }

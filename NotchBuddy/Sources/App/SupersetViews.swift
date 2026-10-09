@@ -111,7 +111,9 @@ struct SupersetListView: View {
                 .padding(.top, 80)
                 .padding(.bottom, 12)
                 .frame(maxHeight: .infinity, alignment: .top)
-            list
+            Group {
+                if let (w, a) = ss.chatTarget { SupersetChatPane(workspace: w, agent: a, ss: ss) } else { list }
+            }
                 .padding(.leading, 116)
                 .padding(.trailing, 12)
                 .padding(.vertical, 10)
@@ -191,14 +193,11 @@ private struct WorkspaceRow: View {
     @ObservedObject var ss: SupersetService
     @ObservedObject private var state = AppState.shared
     @State private var hover = false
-    @State private var replying = false
-    @State private var draft = ""
-    @FocusState private var replyFocused: Bool
 
     private var asking: [Superset.Agent] { workspace.agents.filter { $0.status == .needsYou } }
-    /// Reply goes to the agent that finished its turn most recently.
-    private var replyTarget: Superset.Agent? {
-        workspace.agents.filter { $0.status == .idle }.max { $0.lastEventAt < $1.lastEventAt }
+    /// Chat opens on the agent asking for the user, else the one active most recently.
+    private var chatAgent: Superset.Agent? {
+        asking.first ?? workspace.agents.max { $0.lastEventAt < $1.lastEventAt }
     }
 
     var body: some View {
@@ -207,7 +206,6 @@ private struct WorkspaceRow: View {
             ForEach(asking, id: \.terminalId) { a in
                 PromptCard(workspace: workspace, agent: a, ss: ss, hook: ss.hookApproval(for: a))
             }
-            if replying, let a = replyTarget { replyField(a) }
         }
         .padding(.horizontal, 8).padding(.vertical, 5)
         .background(RoundedRectangle(cornerRadius: 9).fill(Color(hex: hover ? "#24201C" : "#1B1D21")))
@@ -229,15 +227,18 @@ private struct WorkspaceRow: View {
                 }
             }
             Spacer(minLength: 4)
-            if (hover || replying), let a = replyTarget {
-                Button { replying.toggle(); replyFocused = replying } label: {
-                    Text(replying ? "Cancel" : "Reply").font(.system(size: 9.5, weight: .medium))
+            if hover, let a = chatAgent {
+                Button { ss.chatTerminal = a.terminalId } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "bubble.left.fill").font(.system(size: 7.5))
+                        Text("Chat").font(.system(size: 9.5, weight: .medium))
+                    }
                         .foregroundColor(Color(hex: SupersetService.colorHex))
                         .padding(.horizontal, 6).frame(height: 16)
                         .background(RoundedRectangle(cornerRadius: 5).fill(Color(hex: SupersetService.colorHex).opacity(0.12)))
                 }
                 .buttonStyle(.plain)
-                .help("Send a message to \(a.agentId) in this workspace")
+                .help("Chat with \(a.agentId) in this workspace")
             }
             if let pr = workspace.pr { prBadge(pr) }
             Text(Superset.ago(workspace.active)).font(.system(size: 9.5)).foregroundColor(grey)
@@ -246,25 +247,6 @@ private struct WorkspaceRow: View {
         .contentShape(Rectangle())
         .onTapGesture { ss.open(workspace) }
         .help("\(workspace.project) · \(statusLabel(workspace.status)) · click to open in Superset")
-    }
-
-    private func replyField(_ a: Superset.Agent) -> some View {
-        HStack(spacing: 6) {
-            TextField("Reply to \(a.agentId)…  ↩ send · esc close", text: $draft)
-                .textFieldStyle(.plain)
-                .font(.system(size: 10.5))
-                .foregroundColor(Color(hex: "#F5F6F8"))
-                .focused($replyFocused)
-                .onSubmit {
-                    let text = draft
-                    Task { if await ss.reply(workspace, a, text: text) { draft = ""; replying = false } }
-                }
-                .onExitCommand { replying = false }
-            if ss.sending.contains(a.terminalId) { ProgressView().controlSize(.mini) }
-        }
-        .padding(.horizontal, 8).frame(height: 24)
-        .background(RoundedRectangle(cornerRadius: 7).fill(Color(hex: "#141518")))
-        .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color(hex: SupersetService.colorHex).opacity(0.4)))
     }
 
     /// "claude · needs you", or "claude ×2 · working" with several agents.
@@ -293,6 +275,135 @@ private struct WorkspaceRow: View {
         }
         .buttonStyle(.plain)
         .help("PR #\(pr.number): \(pr.title) · checks \(pr.checks)")
+    }
+}
+
+// MARK: - Chat with one agent (Coucou chat style): its screen as the reply, a field to message it
+
+struct SupersetChatPane: View {
+    let workspace: Superset.Workspace
+    let agent: Superset.Agent
+    @ObservedObject var ss: SupersetService
+    @State private var text = ""
+    @FocusState private var focused: Bool
+
+    private var sent: [String] { ss.chatSent[agent.terminalId] ?? [] }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            header
+            ScrollViewReader { proxy in
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(Array(sent.suffix(3).enumerated()), id: \.offset) { _, m in
+                            HStack { Spacer(minLength: 40); mine(m) }
+                        }
+                        if agent.status == .needsYou {
+                            PromptCard(workspace: workspace, agent: agent, ss: ss, hook: ss.hookApproval(for: agent))
+                        } else if let screen = ss.screens[agent.terminalId], !screen.isEmpty {
+                            HStack { theirs(screen); Spacer(minLength: 24) }
+                        }
+                        Color.clear.frame(height: 1).id("end")
+                    }
+                    .padding(.vertical, 2)
+                }
+                .onChange(of: ss.screens[agent.terminalId]) { _, _ in proxy.scrollTo("end", anchor: .bottom) }
+                .onChange(of: sent.count) { _, _ in proxy.scrollTo("end", anchor: .bottom) }
+                .onAppear { proxy.scrollTo("end", anchor: .bottom) }
+            }
+            .frame(maxHeight: .infinity)
+            composer
+        }
+        .onAppear { focused = true }
+        // Reads the screen only while the chat is on screen: nothing runs once the island hides.
+        .task(id: agent.terminalId) {
+            while !Task.isCancelled {
+                await ss.refreshScreen()
+                try? await Task.sleep(for: .seconds(3))
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: 6) {
+            Button { ss.chatTerminal = nil } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "chevron.left").font(.system(size: 9, weight: .semibold)).foregroundColor(Color(hex: "#8E939C"))
+                    Circle().fill(statusColor(agent.status)).frame(width: 6, height: 6)
+                    Text(workspace.title).font(.system(size: 11.5, weight: .medium)).foregroundColor(Color(hex: "#F5F6F8")).lineLimit(1)
+                    Text(workspace.branch).font(.system(size: 10, design: .monospaced)).foregroundColor(grey).lineLimit(1)
+                }
+            }
+            .buttonStyle(.plain)
+            .help("Back to the workspaces")
+            agentPicker
+            Spacer(minLength: 4)
+            Text("\(statusLabel(agent.status)) · \(Superset.ago(agent.lastEventAt))")
+                .font(.system(size: 9.5)).foregroundColor(grey)
+            Button("Open in Superset ↗") { ss.open(workspace) }
+                .font(.system(size: 10)).foregroundColor(Color(hex: SupersetService.colorHex)).buttonStyle(.plain)
+        }
+        .padding(.horizontal, 10).frame(height: 24)
+        .background(Capsule().fill(Color.white.opacity(0.06)))
+    }
+
+    /// The agent's name; a menu to switch when the workspace runs several.
+    @ViewBuilder private var agentPicker: some View {
+        let label = Text("· \(agent.agentId)").font(.system(size: 11)).foregroundColor(Color(hex: "#C5C8CD"))
+        if workspace.agents.count > 1 {
+            Menu {
+                ForEach(workspace.agents, id: \.terminalId) { a in
+                    Button("\(a.agentId) · \(statusLabel(a.status).lowercased())") { ss.chatTerminal = a.terminalId }
+                }
+            } label: { label }
+            .menuStyle(.borderlessButton).menuIndicator(.visible).fixedSize()
+        } else {
+            label
+        }
+    }
+
+    private func mine(_ m: String) -> some View {
+        Text(m).font(.system(size: 11.5)).foregroundColor(Color(hex: "#F5F6F8"))
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: SupersetService.colorHex).opacity(0.16)))
+            .textSelection(.enabled)
+    }
+
+    private func theirs(_ screen: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("\(agent.agentId) · screen").font(.system(size: 9.5)).foregroundColor(Color(hex: "#8E939C"))
+            Text(screen).font(.system(size: 10, design: .monospaced)).foregroundColor(Color(hex: "#C5C8CD"))
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+        }
+        .padding(.horizontal, 10).padding(.vertical, 7)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.05)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.06)))
+    }
+
+    private var composer: some View {
+        HStack(spacing: 8) {
+            TextField("Message \(agent.agentId) in \(workspace.title)…", text: $text)
+                .textFieldStyle(.plain)
+                .font(.system(size: 13))
+                .focused($focused)
+                .onSubmit(send)
+            if ss.sending.contains(agent.terminalId) { ProgressView().controlSize(.mini) }
+            Button(action: send) {
+                Image(systemName: "arrow.up").font(.system(size: 11, weight: .semibold)).foregroundColor(Color(hex: "#0B0C0E"))
+            }
+            .buttonStyle(SendButtonStyle())
+            .disabled(text.trimmingCharacters(in: .whitespaces).isEmpty || ss.sending.contains(agent.terminalId))
+        }
+        .padding(.horizontal, 10).padding(.vertical, 6)
+        .background(Color.white.opacity(0.07))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .simultaneousGesture(TapGesture().onEnded { focused = true })
+    }
+
+    private func send() {
+        let t = text
+        Task { if await ss.sendChat(t) { text = "" } }
     }
 }
 

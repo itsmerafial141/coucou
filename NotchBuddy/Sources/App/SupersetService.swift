@@ -26,6 +26,12 @@ final class SupersetService: ObservableObject {
     /// Numbered prompts read from the screens of agents that need the user, by terminal id.
     @Published private(set) var prompts: [String: Superset.Prompt] = [:]
     @Published private(set) var sending: Set<String> = []
+    /// The agent the notch chat talks to (terminal id); nil shows the workspace list.
+    @Published var chatTerminal: String?
+    /// Messages sent from the notch chat, by terminal id, kept until Coucou quits.
+    @Published private(set) var chatSent: [String: [String]] = [:]
+    /// The end of each chatted agent's screen, by terminal id.
+    @Published private(set) var screens: [String: String] = [:]
 
     private var previous: [String: Superset.Status]?
     private var lastStamp: Date?
@@ -137,6 +143,26 @@ final class SupersetService: ObservableObject {
         return await send(w, a, text: t, submit: true)
     }
 
+    /// The workspace and agent the chat is open on, while that agent is still running.
+    var chatTarget: (Superset.Workspace, Superset.Agent)? {
+        guard let id = chatTerminal else { return nil }
+        for w in workspaces { if let a = w.agents.first(where: { $0.terminalId == id }) { return (w, a) } }
+        return nil
+    }
+
+    /// Re-reads the end of the chatted agent's screen (the chat view calls it every 3 s while open).
+    func refreshScreen() async {
+        guard let (w, a) = chatTarget, let screen = await snapshot(w, a) else { return }
+        screens[a.terminalId] = Superset.screenTail(screen)
+    }
+
+    func sendChat(_ text: String) async -> Bool {
+        guard let (w, a) = chatTarget, await reply(w, a, text: text) else { return false }
+        chatSent[a.terminalId, default: []].append(text.trimmingCharacters(in: .whitespacesAndNewlines))
+        await refreshScreen()
+        return true
+    }
+
     private func snapshot(_ w: Superset.Workspace, _ a: Superset.Agent) async -> String? {
         let input = ["json": ["workspaceId": w.id, "terminalId": a.terminalId, "maxLines": 40]]
         guard let data = try? JSONSerialization.data(withJSONObject: input),
@@ -211,11 +237,17 @@ final class SupersetService: ObservableObject {
             state.tasks[i].pillBadge = asks ? .approval : .finished
         }
         // Coucou's own hook already rings for Claude Code sessions (Superset terminals included):
-        // only the badge here, so one event never sounds twice.
-        guard a.agentId != "claude" else { return }
-        SoundEngine.shared.play(asks ? "approval" : "finish")
-        NotificationCenter.default.post(name: .triggerEmote, object: asks ? BotEmote.surprised : BotEmote.proud)
-        NotificationCenter.default.post(name: .hookReveal, object: nil)
+        // no sound here for them, so one event never sounds twice.
+        if a.agentId != "claude" {
+            SoundEngine.shared.play(asks ? "approval" : "finish")
+            NotificationCenter.default.post(name: .triggerEmote, object: asks ? BotEmote.surprised : BotEmote.proud)
+        }
+        // Opens on that agent's chat like the Discord pill, folding after the usual auto-close delay.
+        // Never over an island the user already has open.
+        guard state.mode != .expanded else { return }
+        chatTerminal = a.terminalId
+        state.setFocus(Self.pillId)
+        NotificationCenter.default.post(name: .hookExpand, object: IslandView.superset)
     }
 
     private func syncTask() {

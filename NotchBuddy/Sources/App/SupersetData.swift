@@ -186,6 +186,25 @@ enum Superset {
         return Prompt(question: question, detail: above, options: options)
     }
 
+    /// The agent's latest output for the notch chat: the end of its screen without the input box and
+    /// status lines agents draw at the bottom (everything from the first rule in the last 8 lines).
+    /// ponytail: screen scraping, so a reply is whatever the terminal shows, box drawing included.
+    static func screenTail(_ screen: String, lines limit: Int = 12) -> String {
+        func isRule(_ l: String) -> Bool {
+            l.hasPrefix("╭") || l.hasPrefix("╰") || l.filter { "─━═".contains($0) }.count > 8
+        }
+        var lines = screen.replacingOccurrences(of: "\u{00A0}", with: " ").components(separatedBy: "\n")
+            .map { String($0.reversed().drop(while: \.isWhitespace).reversed()) }
+        while lines.last?.isEmpty == true { lines.removeLast() }
+        let window = max(0, lines.count - 8)
+        if let cut = lines[window...].firstIndex(where: { isRule($0.trimmingCharacters(in: .whitespaces)) }) {
+            lines.removeSubrange(cut...)
+        }
+        while lines.last?.isEmpty == true { lines.removeLast() }
+        let tail = lines.suffix(limit).drop { $0.isEmpty }
+        return tail.joined(separator: "\n")
+    }
+
     // MARK: - SQLite helpers
 
     private static func rows<T>(_ db: OpaquePointer?, _ sql: String, _ map: (OpaquePointer?) -> T) -> [T]? {
