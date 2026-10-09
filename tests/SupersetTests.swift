@@ -132,11 +132,15 @@ enum SupersetTests {
           Dir:      komune-mobile
           ▶▶ bypass permissions on
         """
-        check("points", Superset.points(fromScreen: claudeScreen)
+        check("turns", Superset.turns(fromScreen: claudeScreen).map(\.text)
               == ["Bash(ls -la)", "The Enter fix is in place. Now I'll start a capture with the missing choices."])
-        check("points keep the last ones", Superset.points(fromScreen: "⏺ a\n⏺ b\n⏺ c", limit: 2) == ["b", "c"])
-        check("no points without ⏺", Superset.points(fromScreen: "codex output\n> ").isEmpty)
-        check("long point shortened", Superset.points(fromScreen: "⏺ " + String(repeating: "x", count: 200)).first?.count == 140)
+        check("turns keep the last ones", Superset.turns(fromScreen: "⏺ a\n⏺ b\n⏺ c", limit: 2).map(\.text) == ["b", "c"])
+        check("no turns without ⏺", Superset.turns(fromScreen: "codex output\n> ").isEmpty)
+        check("long turn shortened", Superset.turns(fromScreen: "⏺ " + String(repeating: "x", count: 200)).first?.text.count == 140)
+        // The user's prompts, wherever typed, but not the input box or a picker choice.
+        let talk = "❯ fix the chat\n  please\n⏺ Done.\n────────────\n❯ draft\n────────────\n❯ 1. Yes"
+        check("turns read the user's prompts", Superset.turns(fromScreen: talk)
+              == [.init(mine: true, text: "fix the chat please"), .init(mine: false, text: "Done.")])
 
         // Chat reply: end of the screen, without the input box and status line.
         let idle = "old line\n⏺ Added weekly_report\n  ✓ 14 tests pass   \n\n────────────────\n❯ \n────────────────\n  ? for shortcuts\n\n"

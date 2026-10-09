@@ -296,20 +296,19 @@ struct SupersetChatPane: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 6) {
                         // Same bubbles as Coucou's own chat: the user's messages on the right, the agent's reply as text.
-                        ForEach(Array(sent.enumerated()), id: \.offset) { _, m in
-                            ChatBubble(message: ChatMessage(role: .user, content: m))
+                        // Claude: the conversation read from its screen, whatever the messages were typed in.
+                        // Other agents: the messages sent from the notch, then the end of their screen.
+                        let turns = ss.turns[agent.terminalId] ?? []
+                        ForEach(turns.isEmpty ? sent.map { ChatMessage(role: .user, content: $0) } : messages(turns)) {
+                            ChatBubble(message: $0)
                         }
                         let asking = agent.status == .needsYou
                         if asking {
                             PromptCard(workspace: workspace, agent: agent, ss: ss, hook: ss.hookApproval(for: agent))
                         }
                         let unread = ss.prompts[agent.terminalId] == nil && ss.hookApproval(for: agent) == nil
-                        let points = ss.points[agent.terminalId] ?? []
-                        // Claude: its last steps as points. Other agents, or a question whose choices
-                        // couldn't be read: the end of the screen.
-                        if !asking, !points.isEmpty {
-                            ChatBubble(message: ChatMessage(role: .assistant, content: points.map { "- \($0)" }.joined(separator: "\n")))
-                        } else if !asking || unread, let screen = ss.screens[agent.terminalId], !screen.isEmpty {
+                        // A question whose choices couldn't be read: the end of the screen.
+                        if asking ? unread : turns.isEmpty, let screen = ss.screens[agent.terminalId], !screen.isEmpty {
                             HStack { theirs(screen); Spacer(minLength: 24) }
                         }
                         if agent.status == .working || ss.sending.contains(agent.terminalId) {
@@ -320,7 +319,7 @@ struct SupersetChatPane: View {
                     .padding(.vertical, 2)
                 }
                 .onChange(of: ss.screens[agent.terminalId]) { _, _ in proxy.scrollTo("end", anchor: .bottom) }
-                .onChange(of: ss.points[agent.terminalId] ?? []) { _, _ in proxy.scrollTo("end", anchor: .bottom) }
+                .onChange(of: ss.turns[agent.terminalId] ?? []) { _, _ in proxy.scrollTo("end", anchor: .bottom) }
                 .onChange(of: sent.count) { _, _ in proxy.scrollTo("end", anchor: .bottom) }
                 .onAppear { proxy.scrollTo("end", anchor: .bottom) }
             }
@@ -373,6 +372,19 @@ struct SupersetChatPane: View {
         } else {
             label
         }
+    }
+
+    /// The user's prompts as bubbles; the agent's lines between two prompts as one reply of points.
+    private func messages(_ turns: [Superset.Turn]) -> [ChatMessage] {
+        var out: [ChatMessage] = []
+        for t in turns {
+            if !t.mine, let last = out.last, last.role == .assistant {
+                out[out.count - 1].content += "\n- " + t.text
+            } else {
+                out.append(ChatMessage(role: t.mine ? .user : .assistant, content: t.mine ? t.text : "- " + t.text))
+            }
+        }
+        return out
     }
 
     private func theirs(_ screen: String) -> some View {

@@ -193,26 +193,35 @@ enum Superset {
         return Prompt(question: question, detail: above, options: options, submit: submit)
     }
 
-    /// What a Claude agent is doing, as short points: its last `limit` "⏺" lines (messages and tool calls)
-    /// with their wrapped continuation, without tool output, boxes or the status line. Empty for other agents.
-    static func points(fromScreen screen: String, limit: Int = 4, maxLength: Int = 140) -> [String] {
-        var points: [String] = []
-        var current: String?
+    /// One line of the chat read from a Claude screen: the user's "❯" prompt or the agent's "⏺" line.
+    struct Turn: Equatable { let mine: Bool; let text: String }
+
+    /// The conversation on a Claude agent's screen: the user's prompts ("❯", or "> " in older versions)
+    /// and the agent's "⏺" lines (messages and tool calls) with their wrapped continuation, without tool
+    /// output, boxes, the input box or the status line; the last `limit`. Empty for other agents.
+    static func turns(fromScreen screen: String, limit: Int = 8, maxLength: Int = 140) -> [Turn] {
+        var turns: [Turn] = []
+        var current: Turn?
+        var previous = ""
         for raw in screen.replacingOccurrences(of: "\u{00A0}", with: " ").components(separatedBy: "\n") {
             let line = raw.trimmingCharacters(in: .whitespaces)
-            if line.hasPrefix("⏺") {
-                if let c = current { points.append(c) }
-                current = line.dropFirst().trimmingCharacters(in: .whitespaces)
-            } else if current != nil, raw.hasPrefix("  "), !line.isEmpty, !line.hasPrefix("⎿") {
-                current! += " " + line
+            defer { previous = line }
+            let prompt = (line.hasPrefix("❯ ") || line.hasPrefix("> "))
+                && previous.filter({ "─━═".contains($0) }).count <= 8           // the input box sits under a rule
+                && line.dropFirst(2).range(of: #"^\d+\."#, options: .regularExpression) == nil   // picker choice
+            if line.hasPrefix("⏺") || prompt {
+                if let c = current { turns.append(c) }
+                current = Turn(mine: prompt, text: line.dropFirst(prompt ? 2 : 1).trimmingCharacters(in: .whitespaces))
+            } else if let c = current, raw.hasPrefix("  "), !line.isEmpty, !line.hasPrefix("⎿") {
+                current = Turn(mine: c.mine, text: c.text + " " + line)
             } else if let c = current {
-                points.append(c)
+                turns.append(c)
                 current = nil
             }
         }
-        if let c = current { points.append(c) }
-        return points.filter { !$0.isEmpty }.suffix(limit)
-            .map { $0.count > maxLength ? String($0.prefix(maxLength - 1)) + "…" : $0 }
+        if let c = current { turns.append(c) }
+        return turns.filter { !$0.text.isEmpty }.suffix(limit)
+            .map { Turn(mine: $0.mine, text: $0.text.count > maxLength ? String($0.text.prefix(maxLength - 1)) + "…" : $0.text) }
     }
 
     /// The agent's latest output for the notch chat: the end of its screen without the input box and

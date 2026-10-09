@@ -32,8 +32,8 @@ final class SupersetService: ObservableObject {
     @Published private(set) var chatSent: [String: [String]] = [:]
     /// The end of each chatted agent's screen, by terminal id.
     @Published private(set) var screens: [String: String] = [:]
-    /// What each chatted Claude agent is doing, as short points from its "⏺" lines.
-    @Published private(set) var points: [String: [String]] = [:]
+    /// The conversation on each chatted Claude agent's screen: the user's "❯" prompts and its "⏺" lines.
+    @Published private(set) var turns: [String: [Superset.Turn]] = [:]
 
     private var previous: [String: Superset.Status]?
     private var lastStamp: Date?
@@ -156,7 +156,7 @@ final class SupersetService: ObservableObject {
     /// Re-reads the end of the chatted agent's screen (the chat view calls it every 3 s while open).
     func refreshScreen() async {
         guard let (w, a) = chatTarget, let screen = await snapshot(w, a, lines: 80) else { return }
-        points[a.terminalId] = Superset.points(fromScreen: screen)
+        turns[a.terminalId] = Superset.turns(fromScreen: screen)
         if a.status == .needsYou, prompts[a.terminalId] == nil, let p = Superset.prompt(fromScreen: screen) {
             prompts[a.terminalId] = p
         }
