@@ -113,7 +113,30 @@ enum SupersetTests {
         """
         let q = Superset.prompt(fromScreen: picker)
         check("question picker: options past descriptions", q?.options.map(\.label) == ["Yes, chat opened", "Opened, no choices", "Did not open", "Type something."])
+        check("question picker: needs Enter", q?.submit == true && p?.submit == false)
         check("question picker: question", q?.question == "Did the Coucou island open on its own?")
+
+        // Chat reply as points: Claude's ⏺ lines, wrapped text joined, no tool output or status line.
+        let claudeScreen = """
+        ⏺ Bash(ls -la)
+          ⎿  total 8
+             drwxr-xr-x  3 me  staff
+        ⏺ The Enter fix is in place. Now I'll start a capture
+          with the missing choices.
+
+          Ran 1 shell command
+        ──────────────────────
+        ❯
+        ──────────────────────
+          [PONYTAIL] Thread Slack
+          Dir:      komune-mobile
+          ▶▶ bypass permissions on
+        """
+        check("points", Superset.points(fromScreen: claudeScreen)
+              == ["Bash(ls -la)", "The Enter fix is in place. Now I'll start a capture with the missing choices."])
+        check("points keep the last ones", Superset.points(fromScreen: "⏺ a\n⏺ b\n⏺ c", limit: 2) == ["b", "c"])
+        check("no points without ⏺", Superset.points(fromScreen: "codex output\n> ").isEmpty)
+        check("long point shortened", Superset.points(fromScreen: "⏺ " + String(repeating: "x", count: 200)).first?.count == 140)
 
         // Chat reply: end of the screen, without the input box and status line.
         let idle = "old line\n⏺ Added weekly_report\n  ✓ 14 tests pass   \n\n────────────────\n❯ \n────────────────\n  ? for shortcuts\n\n"

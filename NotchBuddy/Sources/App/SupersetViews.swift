@@ -302,9 +302,13 @@ struct SupersetChatPane: View {
                         if asking {
                             PromptCard(workspace: workspace, agent: agent, ss: ss, hook: ss.hookApproval(for: agent))
                         }
-                        // While asking, the screen shows only when its choices couldn't be read.
-                        if !asking || (ss.prompts[agent.terminalId] == nil && ss.hookApproval(for: agent) == nil),
-                           let screen = ss.screens[agent.terminalId], !screen.isEmpty {
+                        let unread = ss.prompts[agent.terminalId] == nil && ss.hookApproval(for: agent) == nil
+                        let points = ss.points[agent.terminalId] ?? []
+                        // Claude: its last steps as points. Other agents, or a question whose choices
+                        // couldn't be read: the end of the screen.
+                        if !asking, !points.isEmpty {
+                            HStack { steps(points); Spacer(minLength: 24) }
+                        } else if !asking || unread, let screen = ss.screens[agent.terminalId], !screen.isEmpty {
                             HStack { theirs(screen); Spacer(minLength: 24) }
                         }
                         Color.clear.frame(height: 1).id("end")
@@ -312,6 +316,7 @@ struct SupersetChatPane: View {
                     .padding(.vertical, 2)
                 }
                 .onChange(of: ss.screens[agent.terminalId]) { _, _ in proxy.scrollTo("end", anchor: .bottom) }
+                .onChange(of: ss.points[agent.terminalId] ?? []) { _, _ in proxy.scrollTo("end", anchor: .bottom) }
                 .onChange(of: sent.count) { _, _ in proxy.scrollTo("end", anchor: .bottom) }
                 .onAppear { proxy.scrollTo("end", anchor: .bottom) }
             }
@@ -371,6 +376,24 @@ struct SupersetChatPane: View {
             .padding(.horizontal, 10).padding(.vertical, 6)
             .background(RoundedRectangle(cornerRadius: 12).fill(Color(hex: SupersetService.colorHex).opacity(0.16)))
             .textSelection(.enabled)
+    }
+
+    private func steps(_ points: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("\(agent.agentId) · \(statusLabel(agent.status).lowercased())").font(.system(size: 9.5)).foregroundColor(Color(hex: "#8E939C"))
+            ForEach(Array(points.enumerated()), id: \.offset) { i, p in
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Circle().fill(i == points.count - 1 ? statusColor(agent.status) : grey).frame(width: 4, height: 4)
+                        .alignmentGuide(.firstTextBaseline) { $0[.bottom] + 3 }
+                    Text(p).font(.system(size: 11)).foregroundColor(Color(hex: i == points.count - 1 ? "#F5F6F8" : "#C5C8CD"))
+                        .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .padding(.horizontal, 10).padding(.vertical, 7)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.05)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.06)))
+        .textSelection(.enabled)
     }
 
     private func theirs(_ screen: String) -> some View {

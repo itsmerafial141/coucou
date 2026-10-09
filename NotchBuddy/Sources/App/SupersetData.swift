@@ -146,6 +146,8 @@ enum Superset {
         let question: String
         let detail: [String]       // tool / command lines shown above the question
         let options: [Option]
+        /// Claude's question picker ("Enter to select") moves to the digit and waits for Enter.
+        var submit = false
     }
 
     /// The numbered choice an agent is waiting on, read from the bottom of its terminal screen.
@@ -185,7 +187,30 @@ enum Superset {
             if above.count == 4 { break }
         }
         let question = above.popLast() ?? "Choose an option"
-        return Prompt(question: question, detail: above, options: options)
+        return Prompt(question: question, detail: above, options: options,
+                      submit: lines[first...].contains { $0.contains("Enter to select") })
+    }
+
+    /// What a Claude agent is doing, as short points: its last `limit` "⏺" lines (messages and tool calls)
+    /// with their wrapped continuation, without tool output, boxes or the status line. Empty for other agents.
+    static func points(fromScreen screen: String, limit: Int = 4, maxLength: Int = 140) -> [String] {
+        var points: [String] = []
+        var current: String?
+        for raw in screen.replacingOccurrences(of: "\u{00A0}", with: " ").components(separatedBy: "\n") {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            if line.hasPrefix("⏺") {
+                if let c = current { points.append(c) }
+                current = line.dropFirst().trimmingCharacters(in: .whitespaces)
+            } else if current != nil, raw.hasPrefix("  "), !line.isEmpty, !line.hasPrefix("⎿") {
+                current! += " " + line
+            } else if let c = current {
+                points.append(c)
+                current = nil
+            }
+        }
+        if let c = current { points.append(c) }
+        return points.filter { !$0.isEmpty }.suffix(limit)
+            .map { $0.count > maxLength ? String($0.prefix(maxLength - 1)) + "…" : $0 }
     }
 
     /// The agent's latest output for the notch chat: the end of its screen without the input box and

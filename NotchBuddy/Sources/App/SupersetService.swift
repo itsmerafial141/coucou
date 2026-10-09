@@ -32,6 +32,8 @@ final class SupersetService: ObservableObject {
     @Published private(set) var chatSent: [String: [String]] = [:]
     /// The end of each chatted agent's screen, by terminal id.
     @Published private(set) var screens: [String: String] = [:]
+    /// What each chatted Claude agent is doing, as short points from its "⏺" lines.
+    @Published private(set) var points: [String: [String]] = [:]
 
     private var previous: [String: Superset.Status]?
     private var lastStamp: Date?
@@ -116,8 +118,8 @@ final class SupersetService: ObservableObject {
         prompts = prompts.filter { id, _ in asking.contains { $0.1.terminalId == id } }
         for (w, a) in asking where prompts[a.terminalId] == nil && hookApproval(for: a) == nil {
             Task {
-                // The status lands a moment before the prompt is drawn: one retry.
-                for attempt in 0..<2 {
+                // The status lands before the prompt is drawn (later still behind Coucou's own ask hook).
+                for attempt in 0..<6 {
                     if attempt > 0 { try? await Task.sleep(for: .seconds(1.5)) }
                     if let screen = await snapshot(w, a), let p = Superset.prompt(fromScreen: screen) {
                         prompts[a.terminalId] = p
@@ -128,10 +130,11 @@ final class SupersetService: ObservableObject {
         }
     }
 
-    /// Presses the option's digit in the agent's terminal (no Enter: the digit is the answer).
+    /// Presses the option's digit in the agent's terminal; Enter too for Claude's question picker.
     func answer(_ w: Superset.Workspace, _ a: Superset.Agent, key: String) {
         Task {
-            if await send(w, a, text: key, submit: false) { prompts[a.terminalId] = nil }
+            let submit = prompts[a.terminalId]?.submit ?? false
+            if await send(w, a, text: key, submit: submit) { prompts[a.terminalId] = nil }
         }
     }
 
@@ -152,7 +155,11 @@ final class SupersetService: ObservableObject {
 
     /// Re-reads the end of the chatted agent's screen (the chat view calls it every 3 s while open).
     func refreshScreen() async {
-        guard let (w, a) = chatTarget, let screen = await snapshot(w, a) else { return }
+        guard let (w, a) = chatTarget, let screen = await snapshot(w, a, lines: 80) else { return }
+        points[a.terminalId] = Superset.points(fromScreen: screen)
+        if a.status == .needsYou, prompts[a.terminalId] == nil, let p = Superset.prompt(fromScreen: screen) {
+            prompts[a.terminalId] = p
+        }
         screens[a.terminalId] = Superset.screenTail(screen, lines: a.status == .needsYou ? 16 : 12,
                                                     asking: a.status == .needsYou)
     }
@@ -164,8 +171,8 @@ final class SupersetService: ObservableObject {
         return true
     }
 
-    private func snapshot(_ w: Superset.Workspace, _ a: Superset.Agent) async -> String? {
-        let input = ["json": ["workspaceId": w.id, "terminalId": a.terminalId, "maxLines": 40]]
+    private func snapshot(_ w: Superset.Workspace, _ a: Superset.Agent, lines: Int = 40) async -> String? {
+        let input = ["json": ["workspaceId": w.id, "terminalId": a.terminalId, "maxLines": lines] as [String: Any]]
         guard let data = try? JSONSerialization.data(withJSONObject: input),
               let q = String(data: data, encoding: .utf8)?.addingPercentEncoding(withAllowedCharacters: .alphanumerics),
               let json = await host("GET", "terminal.snapshot?input=\(q)") else { return nil }
