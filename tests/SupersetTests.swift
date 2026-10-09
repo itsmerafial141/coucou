@@ -112,7 +112,7 @@ enum SupersetTests {
         Enter to select · ↑/↓ to navigate · Esc to cancel
         """
         let q = Superset.prompt(fromScreen: picker)
-        check("question picker: options past descriptions", q?.options.map(\.label) == ["Yes, chat opened", "Opened, no choices", "Did not open", "Type something."])
+        check("question picker: options past descriptions", q?.options.map(\.label) == ["Yes, chat opened", "Opened, no choices", "Did not open"])
         check("question picker: needs Enter", q?.submit == true && p?.submit == false)
         check("question picker: question", q?.question == "Did the Coucou island open on its own?")
 

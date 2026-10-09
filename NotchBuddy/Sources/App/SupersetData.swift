@@ -187,8 +187,10 @@ enum Superset {
             if above.count == 4 { break }
         }
         let question = above.popLast() ?? "Choose an option"
-        return Prompt(question: question, detail: above, options: options,
-                      submit: lines[first...].contains { $0.contains("Enter to select") })
+        let submit = lines[first...].contains { $0.contains("Enter to select") }
+        // The picker's free-text choice needs typing: the chat field covers it.
+        if submit { options.removeAll { $0.label.hasPrefix("Type something") } }
+        return Prompt(question: question, detail: above, options: options, submit: submit)
     }
 
     /// What a Claude agent is doing, as short points: its last `limit` "⏺" lines (messages and tool calls)
