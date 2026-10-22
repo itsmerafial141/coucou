@@ -248,7 +248,6 @@ final class SupersetService: ObservableObject {
         // no sound here for them, so one event never sounds twice.
         if a.agentId != "claude" {
             SoundEngine.shared.play(asks ? "approval" : "finish")
-            NotificationCenter.default.post(name: .triggerEmote, object: asks ? BotEmote.surprised : BotEmote.proud)
         }
         // Opens on that agent's chat like the Discord pill, folding after the usual auto-close delay.
         // Never over an island the user already has open.

@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Shortcut Action
 
 /// Every keyboard shortcut Coucou knows about.
-/// The first 11 cases are *global* (registered with Carbon and effective from any app).
+/// The first 9 cases are *global* (registered with Carbon and effective from any app).
 /// Island-local shortcuts are documented in `ShortcutLogic.islandShortcuts` but are
 /// not managed here — they are handled by a local NSEvent monitor in IslandWindowController.
 enum ShortcutAction: String, CaseIterable, Sendable {
@@ -16,8 +16,6 @@ enum ShortcutAction: String, CaseIterable, Sendable {
     case nextPill          = "nextPill"           // ⌃⌥] — next pill, open if closed
     case prevPill          = "prevPill"           // ⌃⌥[ — previous pill, open if closed
     case muteToggle        = "muteToggle"         // ⌃⌥M — mute / unmute sounds
-    case desktopToggle     = "desktopToggle"      // ⌃⌥D — send Mochi to desktop / bring back
-    case wardrobeToggle    = "wardrobeToggle"     // ⌃⌥G — open / close wardrobe
     case openClipboard     = "openClipboard"      // ⌘⇧V — open / close clipboard history
 
     // MARK: UserDefaults keys
@@ -47,8 +45,6 @@ enum ShortcutAction: String, CaseIterable, Sendable {
         case .nextPill:          return "Next pill"
         case .prevPill:          return "Previous pill"
         case .muteToggle:        return "Mute / unmute sounds"
-        case .desktopToggle:     return "Mochi on / off desktop"
-        case .wardrobeToggle:    return "Open / close wardrobe"
         case .openClipboard:     return "Open / close clipboard"
         }
     }
@@ -104,8 +100,6 @@ enum ShortcutLogic {
         .nextPill:          ShortcutSpec(keyCode: 30, nsFlags: ShortcutSpec.ctrlOpt),  // ⌃⌥]
         .prevPill:          ShortcutSpec(keyCode: 33, nsFlags: ShortcutSpec.ctrlOpt),  // ⌃⌥[
         .muteToggle:        ShortcutSpec(keyCode: 46, nsFlags: ShortcutSpec.ctrlOpt),  // ⌃⌥M
-        .desktopToggle:     ShortcutSpec(keyCode: 2,  nsFlags: ShortcutSpec.ctrlOpt),  // ⌃⌥D
-        .wardrobeToggle:    ShortcutSpec(keyCode: 5,  nsFlags: ShortcutSpec.ctrlOpt),  // ⌃⌥G
         .openClipboard:     ShortcutSpec(keyCode: 9,  nsFlags: ShortcutSpec.cmdShift), // ⌘⇧V
     ]
 

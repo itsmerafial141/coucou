@@ -215,7 +215,7 @@ private struct Tile: View {
         VStack(alignment: .leading, spacing: 1) {
             HStack(spacing: 4) {
                 if spin > 0 {
-                    TimelineView(.animation) { ctx in
+                    TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { ctx in
                         Image(systemName: icon)
                             .rotationEffect(.degrees((ctx.date.timeIntervalSinceReferenceDate * spin / 10)
                                 .truncatingRemainder(dividingBy: 360)))

@@ -234,7 +234,6 @@ final class VenturoBotMonitor: ObservableObject {
             state.tasks[i].state = .finished
             if !focused { state.tasks[i].pillBadge = .finished }
             SoundEngine.shared.play("finish")
-            NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.proud)
             DispatchQueue.main.asyncAfter(deadline: .now() + 60) { [weak self] in
                 guard let j = state.tasks.firstIndex(where: { $0.id == Self.pillId }),
                       state.tasks[j].state == .finished else { return }
@@ -243,7 +242,6 @@ final class VenturoBotMonitor: ObservableObject {
             }
         } else {
             if !focused { state.tasks[i].pillBadge = .error }
-            NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.annoyed)
         }
         NotificationCenter.default.post(name: .hookReveal, object: nil)
     }
@@ -300,7 +298,6 @@ final class VenturoBotMonitor: ObservableObject {
             fix?.outcome = outcome
             setMochi(outcome.kind == .fixed ? .finished : .error)
             if outcome.kind == .fixed {
-                NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.proud)
                 SoundEngine.shared.play("finish")
             }
         }

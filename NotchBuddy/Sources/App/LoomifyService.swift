@@ -343,7 +343,6 @@ final class LoomifyService: ObservableObject {
         }
         if state.focusId == Self.pillId && state.mode != .expanded { showNotice(line) }
         SoundEngine.shared.play("blip")
-        NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.surprised)
         NotificationCenter.default.post(name: .hookReveal, object: nil)
     }
 

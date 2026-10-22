@@ -11,7 +11,7 @@ enum IslandMode: String, CaseIterable {
 enum IslandView: String, CaseIterable {
     case overview, empty, approval, question, error, finished
     case confused, upload, uploading, choose, mail, prompt
-    case searching, result, note, settings, greeting, wardrobe
+    case searching, result, note, settings
     case menuBar, spotify, venturo, discord, clipboard, system, phonevps, loomify, superset, jiggler
 }
 
@@ -57,7 +57,6 @@ struct AgentTask: Identifiable, Equatable {
     var source: AgentSource
     var isIntegration: Bool = false  // true for persistent integration pills
     var emote: BotEmote? = nil
-    var miniEye: EyeShape? = nil
     var pillBadge: PillBadge? = nil  // alert badge shown on pill when not focused
     var sessionCwd: String?  = nil  // last known working directory (Claude Code sessions)
     var finalLine: String?   = nil  // last assistant message shown as static text after Stop
@@ -189,9 +188,6 @@ enum IslandConst {
         .result:    ViewLayout(height: 160, botX: 52,  botY: nil, botDiameter: 44, agentMode: .column),
         .note:      ViewLayout(height: 160, botX: 60,  botY: nil, botDiameter: 50, agentMode: .column),
         .settings:  ViewLayout(height: 160, botX: 54,  botY: nil, botDiameter: 46, agentMode: .none),
-        // Greeting: bot drawn by GreetingCanvasView; no BotPlacement needed
-        .greeting:  ViewLayout(height: 150, botX: 320, botY: 90,  botDiameter: 0,  agentMode: .none),
-        .wardrobe:  ViewLayout(height: 160, botX: 68,  botY: nil, botDiameter: 58, agentMode: .none),
         .menuBar:   ViewLayout(height: 160, botX: 54,  botY: nil, botDiameter: 46, agentMode: .none),
         // Clipboard: Mochi centred in the left gutter of the tall card (see ClipboardView)
         // System stats: Mochi in the 116pt left gutter (see SystemStatsView)

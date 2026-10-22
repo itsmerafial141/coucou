@@ -20,10 +20,10 @@ final class SoundEngine {
     }
 
     private func preload() {
-        let names = ["peek","open","close","hover","blip","slap","annoyed","dizzy","greet",
-                     "work","finish","error","approval","question","approve","gulp","tick",
-                     "send","love","pop","proud","wink","yawn","attach","think","search",
-                     "rate","sleep","greeting"]
+        // Only the sounds the Mac still plays; Mochi's own (slap, love, greet…) stay on disk
+        // for the Windows app, which shares Resources/sounds.
+        let names = ["peek","open","close","blip","work","finish","error","approval","question",
+                     "approve","tick","send","pop","rate"]
         for name in names {
             guard let url = Bundle.main.url(forResource: name, withExtension: "wav", subdirectory: "sounds") else { continue }
             var pool: [AVAudioPlayer] = []

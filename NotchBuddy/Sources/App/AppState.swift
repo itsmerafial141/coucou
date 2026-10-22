@@ -27,15 +27,7 @@ final class AppState: ObservableObject {
     // Last app active before NotchBuddy (for window context capture)
     var lastExternalApp: NSRunningApplication? = nil
 
-    // Bot drag-attach state (hides original bot while ghost follows cursor)
-    @Published var isDraggingBot: Bool = false
-
-    // Desktop Mochi: true while Mochi lives on the desktop instead of the notch
-    @Published var mochiOnDesktop: Bool = false
-
     // Mouse tracking
-    var mousePosition: CGPoint = .zero
-    var lastMouseMove: Date = .now
     var lastActivity: Date = .now
     var isPresent: Bool = true
 
@@ -60,29 +52,6 @@ final class AppState: ObservableObject {
     // Sound enabled — persisted
     @Published var soundEnabled: Bool = true {
         didSet { UserDefaults.standard.set(soundEnabled, forKey: "soundEnabled") }
-    }
-
-    // Mochi outfit selection — persisted
-    @Published var mochiOutfitSelection: Outfit = .auto {
-        didSet { Outfit.stored = mochiOutfitSelection }
-    }
-    // Transient: outfit preview while hovering in wardrobe (overrides resolvedOutfit in BotCanvasView)
-    var wardrobePreviewOutfit: Outfit? = nil
-    // Per-day seasonal cache — avoids recomputing Easter and date math on every frame
-    private var _seasonalCache: (dayOfYear: Int, year: Int, outfit: Outfit)?
-    // Transient: worn while the user sits in a Discord voice channel (set by DiscordService)
-    var voiceOutfit: Outfit? = nil
-    var resolvedOutfit: Outfit {
-        if let preview = wardrobePreviewOutfit { return preview }
-        guard mochiOutfitSelection == .auto else { return mochiOutfitSelection }
-        let cal = Calendar.current
-        let now = Date()
-        let day  = cal.ordinality(of: .day, in: .year, for: now) ?? 0
-        let year = cal.component(.year, from: now)
-        if let c = _seasonalCache, c.dayOfYear == day && c.year == year { return c.outfit }
-        let outfit = Outfit.seasonal(for: now, calendar: cal)
-        _seasonalCache = (dayOfYear: day, year: year, outfit: outfit)
-        return outfit
     }
 
     // Claude model used by the chat and the search — persisted
@@ -254,7 +223,6 @@ final class AppState: ObservableObject {
         droppedFiles.removeAll { urls.contains($0) }
         if droppedFiles.isEmpty && (firstWasDelivered || droppedFile == nil) {
             droppedFile = nil
-            UploadSequenceEngine.shared.deactivate()
             view = .upload
         }
     }
@@ -275,11 +243,6 @@ final class AppState: ObservableObject {
     // Absence interval — persisted
     var absenceInterval: TimeInterval = 3 * 60 {
         didSet { UserDefaults.standard.set(absenceInterval, forKey: "absenceInterval") }
-    }
-
-    // Greeting threshold — how long hidden before greeting on reappear (default 2 min)
-    var greetThresholdSeconds: TimeInterval = 120 {
-        didSet { UserDefaults.standard.set(greetThresholdSeconds, forKey: "greetThreshold") }
     }
 
     // Hotkey to show island (e.g. ⌘⇧N)
@@ -450,7 +413,6 @@ final class AppState: ObservableObject {
 
         if let v = ud.object(forKey: "soundEnabled") as? Bool   { soundEnabled = v }
         if let v = ud.object(forKey: "soundVolume")  as? Double { soundVolume  = v }
-        mochiOutfitSelection = Outfit.stored
         if let v = ud.string(forKey: "claudeModel"),
            !v.trimmingCharacters(in: .whitespaces).isEmpty { claudeModel = v }
         if let v = ud.string(forKey: "chatProvider"), let p = ChatProvider(rawValue: v) { chatProvider = p }
@@ -465,7 +427,6 @@ final class AppState: ObservableObject {
             autoCloseInterval = (v == 60) ? 15 : v
         }
         if let v = ud.object(forKey: "absenceInterval")   as? Double { absenceInterval   = v }
-        if let v = ud.object(forKey: "greetThreshold")    as? Double { greetThresholdSeconds = v }
         if let v = ud.object(forKey: "hotkeyEnabled") as? Bool  { hotkeyEnabled = v }
         if let v = ud.object(forKey: "hotkeyFlags")   as? Int   { hotkeyFlags = UInt(v) }
         if let v = ud.object(forKey: "hotkeyCode")    as? Int   { hotkeyCode = UInt16(v) }

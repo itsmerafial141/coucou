@@ -136,7 +136,6 @@ final class ClaudeCodeChat {
         if let final, !final.isEmpty {
             show(final.trimmingCharacters(in: .whitespacesAndNewlines))
             state.view = .prompt
-            NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.happy)
         } else if p.terminationReason == .uncaughtSignal {
             state.chatHistory.removeAll { $0.id == bubble.id }   // cancelled by "+"
         } else {

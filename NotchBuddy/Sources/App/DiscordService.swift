@@ -124,7 +124,6 @@ final class DiscordService: ObservableObject {
         badgeTimer?.invalidate(); badgeTimer = nil
         disconnect()
         unread = nil
-        AppState.shared.voiceOutfit = nil
     }
 
     // MARK: - Dock badge (Accessibility, no token)
@@ -149,7 +148,6 @@ final class DiscordService: ObservableObject {
         // Badge went up (not on the first read) and no Gateway mention just showed it: reveal quietly.
         if let previous, let count, count > previous, Date().timeIntervalSince(lastBadgeAlert) > 10 {
             lastBadgeAlert = Date()
-            NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.surprised)
             NotificationCenter.default.post(name: .hookReveal, object: nil)
         }
     }
@@ -337,7 +335,6 @@ final class DiscordService: ObservableObject {
 
     private func applyMyVoice(wasInVoice: Bool) {
         let inVoice = myVoice != nil
-        AppState.shared.voiceOutfit = myVoice.map { $0.muted ? .headsetMuted : .headset }
         if inVoice != wasInVoice {
             voiceSince = inVoice ? Date() : nil
             if inVoice {
@@ -387,7 +384,6 @@ final class DiscordService: ObservableObject {
             if state.focusId != Self.pillId { state.tasks[i].pillBadge = .approval }
         }
         state.setFocus(Self.pillId)
-        NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.surprised)
         SoundEngine.shared.play("peek")
         // Opens to the Discord view; folds itself after the usual auto-close delay.
         NotificationCenter.default.post(name: .hookExpand, object: IslandView.discord)

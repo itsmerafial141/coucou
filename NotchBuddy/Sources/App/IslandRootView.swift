@@ -27,12 +27,11 @@ struct IslandContainer: View {
     @State private var cornerRadius: CGFloat = IslandConst.roundedCorner
     // topRadius > 0 → convex expanded corners; < 0 → concave ear cutouts
     @State private var islandTopRadius: CGFloat = 0
-    @State private var greetNotif: Bool = false
     /// Compact notice: the island grows this much to the right of the notch (left edge stays put).
     @State private var noticeExtra: CGFloat = 0
     #if !APPSTORE
     @ObservedObject private var loomify = LoomifyService.shared
-    /// Loomify event waiting for a hover while its pill is focused: glow, hop and bell on Mochi.
+    /// Loomify event waiting for a hover while its pill is focused: glow, hop and bell on the status dot.
     private var loomifyPending: Bool {
         loomify.pendingNotice && state.mode == .compact && state.focusId == LoomifyService.pillId
     }
@@ -52,15 +51,6 @@ struct IslandContainer: View {
     private var earOffset: CGFloat { max(0, -islandTopRadius) }
 
     var body: some View {
-        // Canvas active during drag-over (.upload), post-drop animation (.uploading),
-        // AND choose overlay (.choose) — canvas handles the full sequence through user action.
-        // Engine deactivates when user clicks a canvas choose button or navigates away.
-        let uploadActive = state.mode == .expanded
-            && UploadSequenceEngine.shared.isActive
-            && (state.view == .upload || state.view == .uploading || state.view == .choose)
-
-        let greetingActive = state.mode == .expanded && state.view == .greeting
-
         return ZStack(alignment: .topLeading) {
             // Black island shape
             IslandShape(width: islandWidth + noticeExtra, height: islandHeight,
@@ -69,35 +59,12 @@ struct IslandContainer: View {
 
             // Content
             if state.mode == .expanded {
-                if greetingActive {
-                    // Greeting canvas: fixed 640-wide, centered by offset so x=320 aligns with island center
-                    GreetingCanvasView(state: state)
-                        .frame(width: IslandConst.expandedWidth, height: 150)
-                        .offset(x: (islandWidth - IslandConst.expandedWidth) / 2)
-                        .clipShape(IslandShape(width: islandWidth, height: islandHeight,
-                                              cornerRadius: cornerRadius, topRadius: islandTopRadius))
-                        .transition(.opacity)
-                } else if uploadActive {
-                    ZStack(alignment: .topLeading) {
-                        UploadCanvasView(state: state)
-                            .frame(width: islandWidth, height: islandHeight)
-                            .clipShape(IslandShape(width: islandWidth, height: islandHeight,
-                                                  cornerRadius: cornerRadius, topRadius: islandTopRadius))
-                        // Header overlaid: canvas CARD_Y=42 aligns exactly with header bottom,
-                        // matching normal view proportions (8pt top + 34pt header + card + 10pt bottom).
-                        IslandHeader(state: state)
-                            .frame(width: islandWidth, height: 34)
-                            .offset(y: 8)
-                    }
+                IslandContentView(state: state)
+                    .frame(width: islandWidth, height: islandHeight - earOffset)
+                    .offset(y: earOffset)
+                    .clipShape(IslandShape(width: islandWidth, height: islandHeight,
+                                          cornerRadius: cornerRadius, topRadius: islandTopRadius))
                     .transition(.opacity)
-                } else {
-                    IslandContentView(state: state)
-                        .frame(width: islandWidth, height: islandHeight - earOffset)
-                        .offset(y: earOffset)
-                        .clipShape(IslandShape(width: islandWidth, height: islandHeight,
-                                              cornerRadius: cornerRadius, topRadius: islandTopRadius))
-                        .transition(.opacity)
-                }
             }
 
             #if !APPSTORE
@@ -106,18 +73,8 @@ struct IslandContainer: View {
             }
             #endif
 
-            // Single BotPlacement — always alive in the view tree so spring animations
-            // fire from the current position (e.g. choose at 60,101) when canvas deactivates.
-            // Hidden during upload canvas or greeting (both draw their own Mochi).
+            // Status dot where Mochi used to sit — always alive so it springs between views.
             BotPlacement(state: state, islandW: islandWidth, islandH: islandHeight)
-                // Keep idle animations inside the resting strip. Expanded views
-                // retain the panel's full height for particles and hands.
-                .mask(alignment: .topLeading) {
-                    Rectangle().frame(width: islandWidth,
-                                      height: state.mode == .expanded ? 320 : islandHeight)
-                }
-                .opacity(uploadActive || greetingActive ? 0 : 1)
-                .animation(.easeInOut(duration: 0.25), value: uploadActive || greetingActive)
                 #if !APPSTORE
                 .modifier(LoomifyHop(active: loomifyPending))
                 #endif
@@ -179,11 +136,6 @@ struct IslandContainer: View {
         }
         .onChange(of: state.view) { _, newView in
             guard state.mode == .expanded else { return }
-            // Deactivate engine if user navigates outside the upload flow
-            let uploadViews: Set<IslandView> = [.upload, .uploading, .choose]
-            if UploadSequenceEngine.shared.isActive && !uploadViews.contains(newView) {
-                UploadSequenceEngine.shared.deactivate()
-            }
             let (w, h) = islandSize(mode: .expanded, view: newView,
                                     progress: state.uploadProgress,
                                     nw: state.notchWidth, nh: state.notchHeight)
@@ -214,9 +166,6 @@ struct IslandContainer: View {
             islandHeight     = state.view == .prompt ? chatPromptHeight : h
             cornerRadius     = state.mode == .expanded ? IslandConst.expandedCorner : IslandConst.roundedCorner
             islandTopRadius  = 0
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .botGreet)) { _ in
-            greetNotif.toggle()
         }
     }
 
@@ -305,103 +254,87 @@ struct IslandShape: Shape {
     }
 }
 
-// MARK: - Bot placement helper
+// MARK: - Status dot (replaces Mochi)
+
+/// Colour of a session state, shared by the main dot and the mini dots.
+func statusColor(_ s: BotState) -> Color {
+    switch s {
+    case .working:   return Color(hex: "#3B9EFF")
+    case .thinking:  return Color(hex: "#A78BFA")
+    case .searching: return Color(hex: "#6366F1")
+    case .approval:  return Color(hex: "#F5A524")
+    case .question:  return Color(hex: "#22D3EE")
+    case .error:     return Color(hex: "#F4505E")
+    case .finished:  return Color(hex: "#34D399")
+    case .ratelimit: return Color(hex: "#F59E0B")
+    case .sleeping:  return Color(hex: "#94A2B8")
+    case .dizzy:     return Color(hex: "#F472B6")
+    case .idle:      return Color(hex: "#E6E9EE")
+    }
+}
+
+/// Static dot: no per-frame drawing, so it costs nothing between state changes.
+struct StatusDot: View {
+    let color: Color
+    var glow: Bool = true
+
+    var body: some View {
+        Circle()
+            .fill(color)
+            .shadow(color: color.opacity(glow ? 0.7 : 0), radius: 4)
+    }
+}
+
+/// Another session: its own colour, ringed with its state while it is busy or needs you.
+struct MiniStatusDot: View {
+    let task: AgentTask
+
+    var body: some View {
+        let ring = task.state != .idle && task.state != .sleeping
+        Circle()
+            .fill(Color(hex: task.color))
+            .overlay(Circle().stroke(statusColor(task.state), lineWidth: 1.5).opacity(ring ? 1 : 0))
+    }
+}
 
 struct BotPlacement: View {
     @ObservedObject var state: AppState
     let islandW: CGFloat
     let islandH: CGFloat
+    /// Mac too hot (System tab threshold): red dot.
+    @State private var hot = false
+
+    /// Integration pills keep their brand colour; agent sessions show their state.
+    private var color: Color {
+        #if !APPSTORE
+        if hot { return Color(hex: "#F4505E") }
+        if state.showingPlanDetail {
+            return Color(hex: ClaudePlanGauge.color(for: state.claudePlanUsage.flatMap { ClaudePlanGauge.dominantPct($0) }))
+        }
+        #endif
+        if let task = state.focusTask, task.isIntegration, state.stateOverride == nil {
+            return Color(hex: task.color)
+        }
+        return statusColor(state.effectiveState)
+    }
 
     var body: some View {
         let (cx, cy, diameter, opacity) = botPosition(mode: state.mode, view: state.view, islandW: islandW, islandH: islandH, uploadProgress: state.uploadProgress, hasNotch: state.hasNotch)
-        let canvasSize = diameter / 0.6
-        let overhang: CGFloat = 40
-        let isUploading = state.view == .uploading
-
-        Group {
-            // No glow in uploading mode — the tiny dot doesn't need it
-            if state.mode == .expanded && !isUploading {
-                Circle()
-                    .fill(RadialGradient(
-                        gradient: Gradient(stops: [
-                            .init(color: botGlowColor(state.effectiveState), location: 0),
-                            .init(color: .clear, location: 0.62)
-                        ]),
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: diameter * 1.1
-                    ))
-                    .frame(width: diameter * 2.2, height: diameter * 2.2)
-                    .blur(radius: 6)
-                    .opacity(botGlowOpacity(state.effectiveState))
-                    .position(x: cx, y: cy)
-                    .animation(.easeInOut(duration: 0.4), value: state.effectiveState)
-            }
-
-            // Uploading: no particle overhang (no hearts during upload), positioned directly at cy.
-            // BotEngine cy = H/2 + 0 + oy*R + R*0.06 ≈ H/2 (body centered in canvas).
-            // With .position(x:y:) placing the frame center at (uploadCx, cy), bot is at cy ✓.
-            //
-            // Normal: extra 40pt canvas at top for heart particles; position offset up by 20pt;
-            // BotEngine compensates with cy = H/2 + particleOverhang/2 + oy*R + R*0.06.
-            if isUploading {
-                TimelineView(.animation) { tl in
-                    let elapsed: Double = {
-                        guard let start = state.uploadStartTime else { return 0 }
-                        return tl.date.timeIntervalSince(start)
-                    }()
-                    let t = min(1.0, max(0, elapsed / state.uploadDuration))
-                    // cx = 36 + 526*t: bot center at fill right edge (bar left=36, width=526)
-                    let uploadCx = 36 + CGFloat(t * (2 - t)) * 526
-                    BotCanvasView(state: state, particleOverhang: 0)
-                        .frame(width: canvasSize, height: canvasSize)
-                        .opacity(state.isDraggingBot || state.mochiOnDesktop ? 0 : opacity)
-                        .position(x: uploadCx, y: cy)
-                }
-                .transition(.scale(scale: 0.01, anchor: .center).combined(with: .opacity))
-            } else {
-                let onCover = state.mode == .expanded && state.view == .spotify
-                BotCanvasView(state: state, particleOverhang: overhang)
-                    .frame(width: canvasSize, height: canvasSize + overhang)
-                    // On the Spotify cover: a thin dark rim + soft drop shadow keep Mochi readable
-                    // even when the artwork has Mochi's colours.
-                    .shadow(color: .black.opacity(onCover ? 0.6 : 0), radius: 1.5)
-                    .shadow(color: .black.opacity(onCover ? 0.55 : 0), radius: 8, y: 4)
-                    .opacity(state.isDraggingBot || state.mochiOnDesktop ? 0 : opacity)
-                    .position(x: cx, y: cy - overhang / 2)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.72), value: cx)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.72), value: cy)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.72), value: canvasSize)
-                    .transition(.scale(scale: 0.01, anchor: .center).combined(with: .opacity))
-            }
-        }
-        // Branch switch (uploading ↔ normal) animates with a fast spring: uploading dot
-        // scales out at bar-end while normal bot scales in at choose position.
-        .animation(.spring(response: 0.36, dampingFraction: 0.72), value: isUploading)
-        // Slap, drag, and hover are handled by the AppKit NSEvent monitor in
-        // IslandWindowController — not SwiftUI gestures — so this is safe.
-        .allowsHitTesting(false)
-    }
-
-    private func botGlowColor(_ s: BotState) -> Color {
-        switch s {
-        case .working:   return Color(hex: "#3B9EFF")
-        case .thinking:  return Color(hex: "#A78BFA")
-        case .searching: return Color(hex: "#6366F1")
-        case .approval:  return Color(hex: "#F5A524")
-        case .error:     return Color(hex: "#F4505E")
-        case .finished:  return Color(hex: "#34D399")
-        case .ratelimit: return Color(hex: "#F59E0B")
-        default:         return Color.white
-        }
-    }
-
-    private func botGlowOpacity(_ s: BotState) -> Double {
-        switch s {
-        case .idle, .sleeping: return 0.15
-        case .dizzy:           return 0.0
-        default:               return 0.65
-        }
+        // Expanded views keep Mochi's gutter; a small dot sits in its centre.
+        let size = state.mode == .expanded ? max(10, diameter * 0.26) : max(6, diameter * 0.5)
+        StatusDot(color: color, glow: state.effectiveState != .idle)
+            .frame(width: size, height: size)
+            // The uploading view draws its own progress bar.
+            .opacity(state.view == .uploading && state.mode == .expanded ? 0 : opacity)
+            .position(x: cx, y: cy)
+            .animation(.spring(response: 0.5, dampingFraction: 0.72), value: cx)
+            .animation(.spring(response: 0.5, dampingFraction: 0.72), value: cy)
+            .animation(.spring(response: 0.5, dampingFraction: 0.72), value: size)
+            .animation(.easeInOut(duration: 0.3), value: state.effectiveState)
+            .allowsHitTesting(false)
+            #if !APPSTORE
+            .onReceive(SystemMonitor.shared.$hot.removeDuplicates()) { hot = $0 }
+            #endif
     }
 }
 
@@ -452,14 +385,24 @@ struct CountdownBar: View {
                 .cornerRadius(2)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         }
-        .onAppear { startTimer() }
-        .onDisappear { timer?.invalidate() }
+        // Ticks only while expanded: a folded or hidden island runs no timer at all.
+        .onAppear { if state.mode == .expanded { startTimer() } }
+        .onChange(of: state.mode) { _, mode in
+            if mode == .expanded { startTimer() } else { stopTimer(); barWidth = 0 }
+        }
+        .onDisappear { stopTimer() }
     }
 
     private func startTimer() {
+        guard timer == nil else { return }
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            updateBar()
+            MainActor.assumeIsolated { updateBar() }
         }
+    }
+
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
     }
 
     private func updateBar() {
@@ -699,9 +642,8 @@ struct CompactMiniGrid: View {
         let more = others.count > 4
         LazyVGrid(columns: cols, spacing: 4) {
             ForEach(more ? Array(others.prefix(3)) : others) { task in
-                // 12 pt faces in the resting island, always on screen: 15 fps is enough.
-                MiniBotCanvasView(task: task, fps: 15)
-                    .frame(width: 12 / 0.6, height: 12 / 0.6)
+                MiniStatusDot(task: task)
+                    .frame(width: 8, height: 8)
                     .frame(width: 12, height: 12, alignment: .center)
             }
             if more { MorePill(count: others.count - 3, size: 12) }

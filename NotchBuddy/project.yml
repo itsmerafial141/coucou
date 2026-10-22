@@ -119,6 +119,11 @@ targets:
         excludes:
           - "Phone/**"
           - "Widgets/**"
+          # Mochi is drawn only on iPhone now; the Mac shows a status dot instead.
+          - "CoucouKit/BotEngine.swift"
+          - "CoucouKit/MochiOutfitDrawing.swift"
+          - "CoucouKit/MochiStill.swift"
+          - "CoucouKit/MochiWardrobe.swift"
       - path: Resources/LaunchDaemons/fr.louisraille.NotchBuddy.FanHelper.plist
         buildPhase:
           copyFiles:
@@ -196,6 +201,11 @@ targets:
         excludes:
           - "Phone/**"
           - "Widgets/**"
+          # Mochi is drawn only on iPhone now; the Mac shows a status dot instead.
+          - "CoucouKit/BotEngine.swift"
+          - "CoucouKit/MochiOutfitDrawing.swift"
+          - "CoucouKit/MochiStill.swift"
+          - "CoucouKit/MochiWardrobe.swift"
       - path: Assets.xcassets
         buildPhase: resources
       - path: Resources/sounds

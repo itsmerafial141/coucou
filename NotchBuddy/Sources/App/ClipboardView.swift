@@ -63,7 +63,6 @@ struct ClipboardView: View {
         }
         .onChange(of: store.lastCopied) { _, id in
             guard let id else { return }
-            NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.happy)
             withAnimation(.easeOut(duration: 0.15)) { flashed = id }
             withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) { toast = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {

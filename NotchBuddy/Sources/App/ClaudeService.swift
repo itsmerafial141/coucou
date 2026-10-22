@@ -396,7 +396,6 @@ final class ClaudeService {
                 }
                 state.stateOverride = nil
                 state.view = .prompt
-                NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.happy)
             } catch let e as LocalChatError {
                 conversationMessages.removeLast()
                 state.chatHistory.removeAll { $0.id == msgId }
@@ -441,7 +440,6 @@ final class ClaudeService {
                 state.chatHistory.append(ChatMessage(role: .assistant, content: trimmed))
                 state.stateOverride = nil
                 state.view = .prompt
-                NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.happy)
             } catch {
                 conversationMessages.removeLast()
                 await showError(error.localizedDescription, state: state)
@@ -557,7 +555,6 @@ final class ClaudeService {
 
         state.stateOverride = nil
         state.view = .prompt
-        NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.happy)
     }
 
     // MARK: - Structured result handler
@@ -608,7 +605,6 @@ final class ClaudeService {
 
         state.stateOverride = nil
         state.view = .result
-        NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.proud)
     }
 
     private func showError(_ message: String, state: AppState) async {
