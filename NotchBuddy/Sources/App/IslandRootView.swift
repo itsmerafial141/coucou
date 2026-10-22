@@ -502,7 +502,7 @@ struct IslandContentView: View {
                     // Views that fill available height instead of the fixed 98pt content frame:
                     // chat (prompt) is always flexible; mail is flexible only when active so
                     // it doesn't push the ZStack taller when inactive.
-                    let isTall = v == .prompt || v == .clipboard || v == .system || ((v == .mail || v == .spotify || v == .venturo || v == .discord || v == .phonevps || v == .loomify || v == .superset) && active)
+                    let isTall = v == .prompt || v == .clipboard || v == .system || v == .jiggler || ((v == .mail || v == .spotify || v == .venturo || v == .discord || v == .phonevps || v == .loomify || v == .superset) && active)
                     let anim: Animation = active
                         ? .spring(response: 0.4, dampingFraction: 0.8).delay(0.16)
                         : .easeIn(duration: 0.16)
@@ -563,6 +563,10 @@ struct IslandHeader: View {
                 }
                 #endif
                 HStack(spacing: 14) {
+                    #if !APPSTORE
+                    // Right group: a seventh tab on the left would sit under the camera notch.
+                    TabButton(icon: "cursorarrow.motionlines", view: .jiggler, state: state)
+                    #endif
                     Button(action: {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                             state.view = .settings

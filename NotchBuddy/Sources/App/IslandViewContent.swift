@@ -34,6 +34,12 @@ struct IslandViewContent: View {
             #else
             EmptyView()
             #endif
+        case .jiggler:
+            #if !APPSTORE
+            MouseJigglerView(state: state)
+            #else
+            EmptyView()
+            #endif
         case .spotify:
             #if !APPSTORE
             SpotifyPlayerView(state: state)

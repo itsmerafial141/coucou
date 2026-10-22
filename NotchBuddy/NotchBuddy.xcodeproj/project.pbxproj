@@ -42,6 +42,7 @@
 		23BFB915C12B0BC4E9B50AAA /* ApprovalRelay.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD426E81DF79CA79888059D9 /* ApprovalRelay.swift */; };
 		242192B4DDF6E6E90C149BDC /* DiscordService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31720A18CA6F97E7F65D2540 /* DiscordService.swift */; };
 		244EC9B77D1903C8DD505D04 /* MochiLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADA6A002ABEC0CC57667FBE0 /* MochiLiveActivity.swift */; };
+		245C7F02A321C3BAF69A8541 /* MouseJiggler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 149D72690EF6EEDA6E2970FB /* MouseJiggler.swift */; };
 		2540E4198492CC2B9237ED99 /* SpotifyController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A9E6EB7C8468A8339CF6A5C /* SpotifyController.swift */; };
 		25F66E99460D62478899A292 /* MochiWardrobe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79A7807ADD0963FF260D1FAD /* MochiWardrobe.swift */; };
 		2674F08050938C0424B3E32C /* PhoneVPSViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9C79FE1B04D86DC1C585AC /* PhoneVPSViews.swift */; };
@@ -218,6 +219,7 @@
 		E776C7D1DE5C62EA8D4BA3E3 /* FileDropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3232F258523DD8D09B670363 /* FileDropView.swift */; };
 		E81575CE4433C6F88E424A8F /* LocalChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8790ACE9F73BD74640A0F20C /* LocalChat.swift */; };
 		E86288F946BAEE454CADC037 /* MenuBarTrayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A136C9A3D438D572F4067F62 /* MenuBarTrayView.swift */; };
+		E9C1AC87E49AF58C3EB5934B /* MouseJiggler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 149D72690EF6EEDA6E2970FB /* MouseJiggler.swift */; };
 		E9C21D11BCB72C392436D19E /* ClaudePlanGauge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BF22817EC70748F2D1FB2E7 /* ClaudePlanGauge.swift */; };
 		EB23ED9F1C12EA8B54A76A91 /* ResendPoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61B5FDDE03F5F711146937E2 /* ResendPoller.swift */; };
 		EC6237D7A8E1B2F785DEFE4A /* LRCLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1244674D5A60D491B8E1025 /* LRCLine.swift */; };
@@ -309,6 +311,7 @@
 		1218B86E249691AF44F819AC /* HotKeyCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeyCenter.swift; sourceTree = "<group>"; };
 		12E32ED3910DED20BEEF39E5 /* CoucouPhone.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CoucouPhone.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		136626568FF0C3EAB1D08067 /* LiveActivityRelay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityRelay.swift; sourceTree = "<group>"; };
+		149D72690EF6EEDA6E2970FB /* MouseJiggler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseJiggler.swift; sourceTree = "<group>"; };
 		15A1A8206F73376F4CAF2057 /* IslandRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslandRootView.swift; sourceTree = "<group>"; };
 		1648DC2D9BA295F3605A318C /* VenturoViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenturoViews.swift; sourceTree = "<group>"; };
 		168A9A73B519018FAB0AA465 /* GitHubActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubActivity.swift; sourceTree = "<group>"; };
@@ -468,6 +471,7 @@
 				D1244674D5A60D491B8E1025 /* LRCLine.swift */,
 				8964A7E3F3EA77E0292B8488 /* MenuBarTray.swift */,
 				A136C9A3D438D572F4067F62 /* MenuBarTrayView.swift */,
+				149D72690EF6EEDA6E2970FB /* MouseJiggler.swift */,
 				4F142FB3952B5F0639383047 /* MusicController.swift */,
 				B89DA1A0C21AE3535A1760BB /* N8nPoller.swift */,
 				F1BD8F3CAA60CF37640759E1 /* NotchBuddyApp.swift */,
@@ -850,6 +854,7 @@
 				DD2EEF113DB5EAA35CD88312 /* MochiOutfitDrawing.swift in Sources */,
 				72B1AEDB2152BF73659EB598 /* MochiStill.swift in Sources */,
 				25F66E99460D62478899A292 /* MochiWardrobe.swift in Sources */,
+				E9C1AC87E49AF58C3EB5934B /* MouseJiggler.swift in Sources */,
 				5C6D0BC8C546718CAA82BF90 /* MusicController.swift in Sources */,
 				0A267EE2955C7AD8E02A296C /* N8nPoller.swift in Sources */,
 				06BF5FD95E03010CAFDBF2D0 /* NotchBuddyApp.swift in Sources */,
@@ -991,6 +996,7 @@
 				ADBB9C15DDA4044625B325BE /* MochiOutfitDrawing.swift in Sources */,
 				78F045A55E6F4EEA5787EEEF /* MochiStill.swift in Sources */,
 				A885B7E6DC43231BECE36E3D /* MochiWardrobe.swift in Sources */,
+				245C7F02A321C3BAF69A8541 /* MouseJiggler.swift in Sources */,
 				9C653B8291EFFA414565E8A8 /* MusicController.swift in Sources */,
 				160EDB9D06275E2607DA5151 /* N8nPoller.swift in Sources */,
 				DE05D09A32117582AC93A24A /* NotchBuddyApp.swift in Sources */,

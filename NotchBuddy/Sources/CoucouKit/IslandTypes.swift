@@ -12,7 +12,7 @@ enum IslandView: String, CaseIterable {
     case overview, empty, approval, question, error, finished
     case confused, upload, uploading, choose, mail, prompt
     case searching, result, note, settings, greeting, wardrobe
-    case menuBar, spotify, venturo, discord, clipboard, system, phonevps, loomify, superset
+    case menuBar, spotify, venturo, discord, clipboard, system, phonevps, loomify, superset, jiggler
 }
 
 // MARK: - Bot State
@@ -197,6 +197,7 @@ enum IslandConst {
         // System stats: Mochi in the 116pt left gutter (see SystemStatsView)
         .system:    ViewLayout(height: 228, botX: 64,  botY: 130, botDiameter: 54, agentMode: .none),
         .clipboard: ViewLayout(height: 196, botX: 54,  botY: 114, botDiameter: 46, agentMode: .none),
+        .jiggler:   ViewLayout(height: 180, botX: 54,  botY: nil, botDiameter: 46, agentMode: .none),
         // Spotify player: Mochi sits on the middle of the 124pt cover (see SpotifyPlayerView)
         .spotify:   ViewLayout(height: 196, botX: 82,  botY: 114, botDiameter: 54, agentMode: .none),
         // Venturo Bot detail: Mochi in the 116pt left gutter (see VenturoDetailView)
