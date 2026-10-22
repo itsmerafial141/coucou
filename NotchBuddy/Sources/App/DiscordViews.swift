@@ -95,7 +95,7 @@ struct DiscordCardView: View {
                     .font(.system(size: 11, weight: .medium)).foregroundColor(blurple).buttonStyle(.plain)
             }
             .padding(.top, 9).padding(.bottom, 8)
-            .padding(.leading, 108).padding(.trailing, 36)
+            .padding(.leading, 16).padding(.trailing, 36)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
 
@@ -106,7 +106,7 @@ struct DiscordCardView: View {
         }
     }
 
-    /// In a voice channel: channel, people, time, and the mute toggle (Mochi mirrors the state).
+    /// In a voice channel: channel, people, time, and the mute toggle.
     private func voiceCard(_ me: DiscordService.VoiceMember) -> some View {
         let count = discord.occupiedVoice.first { $0.channel.id == me.channelId }?.members.count ?? 1
         return VStack(alignment: .leading, spacing: 3) {
@@ -122,7 +122,7 @@ struct DiscordCardView: View {
             }
             Spacer(minLength: 0)
             HStack(spacing: 10) {
-                // Icon only: the card is narrow next to Mochi.
+                // Icon only: keeps the voice row compact.
                 Button { discord.toggleMute() } label: {
                     Image(systemName: me.muted ? "mic.slash.fill" : "mic.fill")
                         .font(.system(size: 12, weight: .semibold))
@@ -140,7 +140,7 @@ struct DiscordCardView: View {
             }
         }
         .padding(.top, 9).padding(.bottom, 9)
-        .padding(.leading, 108).padding(.trailing, 32)
+        .padding(.leading, 16).padding(.trailing, 32)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
@@ -152,7 +152,6 @@ struct DiscordCardView: View {
 
 // MARK: - Full view (IslandView.discord)
 
-/// Mochi sits in the left gutter: the `.discord` layout in IslandConst matches the 116pt inset.
 struct DiscordFullView: View {
     @ObservedObject var state: AppState
     @ObservedObject private var discord = DiscordService.shared
@@ -187,7 +186,7 @@ struct DiscordFullView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 if current != "voice" && current != "mentions" && discord.connection == .connected { composer }
             }
-            .padding(.leading, 116).padding(.trailing, 14).padding(.vertical, 10)
+            .padding(.leading, 16).padding(.trailing, 14).padding(.vertical, 10)
         }
         .onChange(of: state.view) { _, v in
             if v != .discord { discord.highlightedMessage = nil }

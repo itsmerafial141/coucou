@@ -40,7 +40,7 @@ final class VenturoBotMonitor: ObservableObject {
 
     var lastRun: Run? { runs.first }
     var isInstalled: Bool { NSWorkspace.shared.urlForApplication(withBundleIdentifier: Self.bundleId) != nil }
-    /// Worst state across the components (drives the pill dot and Mochi).
+    /// Worst state across the components (drives the pill state).
     var overall: Health {
         let all = [discord, listener, mcp, claude]
         if all.contains(.failing) { return .failing }

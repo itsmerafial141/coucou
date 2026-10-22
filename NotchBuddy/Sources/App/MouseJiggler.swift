@@ -195,7 +195,7 @@ struct MouseJigglerView: View {
                     }
                 }
             }
-            .padding(.leading, 84)
+            .padding(.leading, 16)
             .padding(.trailing, 12)
             .padding(.vertical, 4)
         }

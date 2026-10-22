@@ -147,14 +147,6 @@ enum ChatProvider: String, CaseIterable, Codable {
 
 struct ViewLayout {
     let height: CGFloat
-    let botX: CGFloat
-    let botY: CGFloat?         // nil = auto-centered
-    let botDiameter: CGFloat
-    let agentMode: AgentLayoutMode
-}
-
-enum AgentLayoutMode {
-    case none, grid, pills, column
 }
 
 // MARK: - Constants (from NW, NH, EW in prototype)
@@ -169,44 +161,35 @@ enum IslandConst {
 
     static let viewLayouts: [IslandView: ViewLayout] = [
         // Home is the reference: height 150
-        // botY: the left card's centre (header ends at 42, 10pt bottom padding → (42 + 150) / 2),
-        // minus the body's ~1pt drop inside its canvas; the auto value sat ~6pt low.
-        .overview:  ViewLayout(height: 160, botX: 68,  botY: 95,  botDiameter: 58, agentMode: .pills),
+        .overview:  ViewLayout(height: 160),
         // All non-chat views match home height (150) — law
-        .empty:     ViewLayout(height: 160, botX: 70,  botY: nil, botDiameter: 62, agentMode: .none),
-        .approval:  ViewLayout(height: 160, botX: 62,  botY: nil, botDiameter: 56, agentMode: .column),
-        .question:  ViewLayout(height: 160, botX: 62,  botY: nil, botDiameter: 56, agentMode: .column),
-        .error:     ViewLayout(height: 160, botX: 62,  botY: nil, botDiameter: 58, agentMode: .column),
-        .finished:  ViewLayout(height: 160, botX: 62,  botY: nil, botDiameter: 58, agentMode: .column),
-        .confused:  ViewLayout(height: 160, botX: 76,  botY: nil, botDiameter: 66, agentMode: .column),
-        .upload:    ViewLayout(height: 176, botX: 140, botY: 104, botDiameter: 62, agentMode: .column),
-        .uploading: ViewLayout(height: 176, botX: 46,  botY: 118, botDiameter: 20, agentMode: .none),
-        .choose:    ViewLayout(height: 176, botX: 60,  botY: 101, botDiameter: 52, agentMode: .column),
-        .mail:      ViewLayout(height: 240, botX: 56,  botY: nil, botDiameter: 46, agentMode: .column),
-        .prompt:    ViewLayout(height: 160, botX: 52,  botY: nil, botDiameter: 44, agentMode: .column),
-        .searching: ViewLayout(height: 160, botX: 52,  botY: nil, botDiameter: 44, agentMode: .column),
-        .result:    ViewLayout(height: 160, botX: 52,  botY: nil, botDiameter: 44, agentMode: .column),
-        .note:      ViewLayout(height: 160, botX: 60,  botY: nil, botDiameter: 50, agentMode: .column),
-        .settings:  ViewLayout(height: 160, botX: 54,  botY: nil, botDiameter: 46, agentMode: .none),
-        .menuBar:   ViewLayout(height: 160, botX: 54,  botY: nil, botDiameter: 46, agentMode: .none),
-        // Clipboard: Mochi centred in the left gutter of the tall card (see ClipboardView)
-        // System stats: Mochi in the 116pt left gutter (see SystemStatsView)
-        .system:    ViewLayout(height: 228, botX: 64,  botY: 130, botDiameter: 54, agentMode: .none),
-        .clipboard: ViewLayout(height: 196, botX: 54,  botY: 114, botDiameter: 46, agentMode: .none),
-        .jiggler:   ViewLayout(height: 180, botX: 54,  botY: nil, botDiameter: 46, agentMode: .none),
-        // Spotify player: Mochi sits on the middle of the 124pt cover (see SpotifyPlayerView)
-        .spotify:   ViewLayout(height: 196, botX: 82,  botY: 114, botDiameter: 54, agentMode: .none),
-        // Venturo Bot detail: Mochi in the 116pt left gutter (see VenturoDetailView)
-        .venturo:   ViewLayout(height: 244, botX: 64,  botY: 138, botDiameter: 54, agentMode: .none),
-        // Phone VPS troubleshooting: Mochi in the 116pt left gutter, card centre (see PhoneVPSDetailView).
-        // The 8 service rows + stats + actions need ~212pt of card: 264 keeps the 10pt bottom margin.
-        .phonevps:  ViewLayout(height: 264, botX: 64,  botY: 148, botDiameter: 54, agentMode: .none),
-        // Loomify kanban: Mochi at the top of the 116pt left gutter, project info below (see LoomifyBoardView)
-        .loomify:   ViewLayout(height: 276, botX: 64,  botY: 86,  botDiameter: 54, agentMode: .none),
+        .empty:     ViewLayout(height: 160),
+        .approval:  ViewLayout(height: 160),
+        .question:  ViewLayout(height: 160),
+        .error:     ViewLayout(height: 160),
+        .finished:  ViewLayout(height: 160),
+        .confused:  ViewLayout(height: 160),
+        .upload:    ViewLayout(height: 176),
+        .uploading: ViewLayout(height: 176),
+        .choose:    ViewLayout(height: 176),
+        .mail:      ViewLayout(height: 240),
+        .prompt:    ViewLayout(height: 160),
+        .searching: ViewLayout(height: 160),
+        .result:    ViewLayout(height: 160),
+        .note:      ViewLayout(height: 160),
+        .settings:  ViewLayout(height: 160),
+        .menuBar:   ViewLayout(height: 160),
+        .system:    ViewLayout(height: 228),
+        .clipboard: ViewLayout(height: 196),
+        .jiggler:   ViewLayout(height: 180),
+        .spotify:   ViewLayout(height: 196),
+        .venturo:   ViewLayout(height: 244),
+        // Phone VPS: the 8 service rows + stats + actions need ~212pt of card: 264 keeps the 10pt bottom margin.
+        .phonevps:  ViewLayout(height: 264),
+        .loomify:   ViewLayout(height: 276),
         // Superset workspaces: same frame as the Loomify board (see SupersetListView)
-        .superset:  ViewLayout(height: 276, botX: 64,  botY: 86,  botDiameter: 54, agentMode: .none),
-        // Discord feed / voice: Mochi in the 116pt left gutter (see DiscordFullView)
-        .discord:   ViewLayout(height: 230, botX: 64,  botY: 131, botDiameter: 54, agentMode: .none),
+        .superset:  ViewLayout(height: 276),
+        .discord:   ViewLayout(height: 230),
     ]
 
     // Project colors — keyed by lowercase display name or slug

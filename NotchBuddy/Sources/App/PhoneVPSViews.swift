@@ -55,7 +55,7 @@ struct PhoneVPSCardView: View {
                     }
                 }
             }
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 36)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
 
@@ -79,7 +79,6 @@ struct PhoneVPSCardView: View {
 
 // MARK: - Detail (IslandView.phonevps): troubleshooting
 
-/// Mochi sits in the left gutter: the `.phonevps` layout in IslandConst matches the 116pt inset.
 struct PhoneVPSDetailView: View {
     @ObservedObject var state: AppState
     @ObservedObject private var vps = PhoneVPSMonitor.shared
@@ -92,7 +91,7 @@ struct PhoneVPSDetailView: View {
             Group {
                 if let out = vps.output { OutputPanel(out: out, vps: vps) } else { overview }
             }
-            .padding(.leading, 116)
+            .padding(.leading, 16)
             .padding(.trailing, 14)
             .padding(.vertical, 12)
             .transition(.opacity)

@@ -19,9 +19,6 @@ final class IslandWindowController: NSWindowController {
     private var keyMonitor: Any?
     private var viewSubscription: AnyCancellable?
 
-    // Suppress peek sound on next reveal (e.g. musicReveal)
-    var silentNextReveal = false
-
     // Finished-pin timer
     private var finishedPinTimer: DispatchWorkItem?
 
@@ -149,13 +146,7 @@ final class IslandWindowController: NSWindowController {
                 self.setMode(.hidden)
 
             case .petit:
-                if from == .hidden {
-                    if self.silentNextReveal {
-                        self.silentNextReveal = false
-                    } else {
-                        SoundEngine.shared.play("peek")
-                    }
-                }
+                // No peek sound: the compact island stays invisible unless it carries a notice.
                 // setMode BEFORE changing view: onChange(of: state.view) guards on .expanded,
                 // so setting view while already compact won't trigger a spurious open animation.
                 self.setMode(.compact)
@@ -553,9 +544,7 @@ final class IslandWindowController: NSWindowController {
         // Music started playing: reveal silently (no peek sound)
         NotificationCenter.default.addObserver(forName: .musicReveal, object: nil, queue: .main) { [weak self] _ in
             guard let self else { return }
-            self.silentNextReveal = true
             self.fsm.reveal()
-            self.silentNextReveal = false
         }
 
         // Collapse requests from views (OK button, etc.)
@@ -788,13 +777,15 @@ func compactNoticeExtra(nw: CGFloat) -> CGFloat {
     max(0, min(180, 720 / 2 - nw / 2 - 80 - 8))
 }
 
+@MainActor
 func islandSize(mode: IslandMode, view: IslandView,
                 progress: Double = 0,
                 nw: CGFloat = IslandConst.notchWidth,
                 nh: CGFloat = IslandConst.notchHeight) -> (CGFloat, CGFloat) {
     switch mode {
     case .hidden:   return (nw, nh)
-    case .compact:  return (nw + 160, nh)
+    // No character in the ears any more: compact looks like hidden unless a notice needs the room.
+    case .compact:  return AppState.shared.compactNotice == nil ? (nw, nh) : (nw + 160, nh)
     case .expanded:
         let layout = IslandConst.viewLayouts[view]!
         return (IslandConst.expandedWidth, layout.height)

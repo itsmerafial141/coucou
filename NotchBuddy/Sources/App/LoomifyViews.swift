@@ -57,7 +57,7 @@ struct LoomifyCardView: View {
                     }
                 }
             }
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 36)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
 
@@ -82,7 +82,7 @@ struct LoomifyCardView: View {
 
 // MARK: - Detail (IslandView.loomify): kanban board
 
-/// Mochi sits at the top of the 116pt left gutter (`.loomify` layout in IslandConst), project info below it.
+/// Project info in the 116pt left column, the board to its right.
 struct LoomifyBoardView: View {
     @ObservedObject var state: AppState
     @ObservedObject private var lf = LoomifyService.shared
@@ -95,7 +95,7 @@ struct LoomifyBoardView: View {
             gutter
                 .frame(width: 104, alignment: .leading)
                 .padding(.leading, 14)
-                .padding(.top, 80)
+                .padding(.top, 12)
                 .padding(.bottom, 12)
                 .frame(maxHeight: .infinity, alignment: .top)
             board
@@ -257,67 +257,6 @@ private struct CardView: View {
             }
             .buttonStyle(.plain)
         }
-    }
-}
-
-// MARK: - Compact island notice (Loomify event while its pill is focused)
-// Mochi sits at x = 40, centred vertically, in the compact island (botPosition, .compact).
-
-private var noticePurple: Color { Color(hex: "#A855F7") }   // LoomifyService.colorHex
-
-/// Soft purple glow breathing behind Mochi until the hover.
-struct LoomifyNoticeGlow: View {
-    let islandHeight: CGFloat
-    @State private var bright = false
-
-    var body: some View {
-        Circle()
-            .fill(RadialGradient(colors: [noticePurple.opacity(0.65), noticePurple.opacity(0)],
-                                 center: .center, startRadius: 0, endRadius: islandHeight / 2))
-            .frame(width: islandHeight, height: islandHeight)
-            .opacity(bright ? 0.95 : 0.25)
-            .position(x: 40, y: islandHeight / 2)
-            .onAppear { withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) { bright = true } }
-            .allowsHitTesting(false)
-    }
-}
-
-/// The "news" bell on Mochi's top-right while the notice waits.
-struct LoomifyNoticeBell: View {
-    let islandHeight: CGFloat
-
-    var body: some View {
-        let d = min(20, max(0, islandHeight - 6))
-        Image(systemName: "bell.fill")
-            .font(.system(size: 5.5, weight: .bold)).foregroundColor(.white)
-            .frame(width: 10, height: 10)
-            .background(Circle().fill(noticePurple))
-            .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
-            .position(x: 40 + d / 2 - 1, y: islandHeight / 2 - d / 2 + 2)
-            .allowsHitTesting(false)
-    }
-}
-
-/// A small hop every 3 s while active. Driven by a trigger, so nothing runs when inactive.
-struct LoomifyHop: ViewModifier {
-    let active: Bool
-    @State private var tick = 0
-
-    func body(content: Content) -> some View {
-        content
-            .keyframeAnimator(initialValue: CGFloat(0), trigger: tick) { c, y in c.offset(y: y) } keyframes: { _ in
-                KeyframeTrack {
-                    SpringKeyframe(-5, duration: 0.2, spring: .snappy)
-                    SpringKeyframe(0, duration: 0.45, spring: .bouncy)
-                }
-            }
-            .task(id: active) {
-                guard active else { return }
-                while !Task.isCancelled {
-                    tick += 1
-                    try? await Task.sleep(for: .seconds(3))
-                }
-            }
     }
 }
 

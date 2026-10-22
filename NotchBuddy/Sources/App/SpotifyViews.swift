@@ -143,11 +143,7 @@ struct SpotifyCardView: View {
                 }
             }
         }
-        // Centered on Mochi, not on the card: the bot sits at y=54 in card coords
-        // (101 in island coords, card top 47) while the 98pt card centers at 49 —
-        // the 10pt top padding biases the centered content down by those 5pt.
-        .padding(.top, 10)
-        .padding(.leading, 108)
+        .padding(.leading, 16)
         .padding(.trailing, 14)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
@@ -155,8 +151,6 @@ struct SpotifyCardView: View {
 
 // MARK: - Full player (IslandView.spotify)
 
-/// Mochi sits on the middle of the cover: the bot position for `.spotify` in IslandConst
-/// matches `coverSize` and the paddings here.
 struct SpotifyPlayerView: View {
     @ObservedObject var state: AppState
     @ObservedObject private var spotify = SpotifyController.shared

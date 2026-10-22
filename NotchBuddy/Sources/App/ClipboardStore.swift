@@ -19,7 +19,7 @@ final class ClipboardStore: ObservableObject {
     }
 
     @Published private(set) var items: [Item] = []
-    /// Bumped when an item is copied back, so the view can flash + Mochi can react.
+    /// Bumped when an item is copied back, so the view can flash.
     @Published private(set) var lastCopied: UUID?
 
     private var changeCount = NSPasteboard.general.changeCount

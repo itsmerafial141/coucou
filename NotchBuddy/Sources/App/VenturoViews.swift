@@ -66,7 +66,7 @@ struct VenturoCardView: View {
                 StatusRow(label: "Weekly", health: bot.weekly)
                 StatusRow(label: "Listener", health: bot.listener)
             }
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 36)
             .frame(maxHeight: .infinity)
 
@@ -90,7 +90,6 @@ struct VenturoCardView: View {
 
 // MARK: - Detail (IslandView.venturo)
 
-/// Mochi sits in the left gutter: the `.venturo` layout in IslandConst matches the 116pt inset.
 struct VenturoDetailView: View {
     @ObservedObject var state: AppState
     @ObservedObject private var bot = VenturoBotMonitor.shared
@@ -100,11 +99,10 @@ struct VenturoDetailView: View {
             CardBackground(wash: nil)
             if let fix = bot.fix {
                 FixPanel(fix: fix, bot: bot)
-                    .padding(.leading, 116)
+                    .padding(.leading, 16)
                     .padding(.trailing, 14)
                     .padding(.vertical, 12)
                     .transition(.opacity)
-                if fix.outcome == nil { RepairOverlay() }
             } else {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(alignment: .top, spacing: 16) {
@@ -118,7 +116,7 @@ struct VenturoDetailView: View {
                         link("Open log") { bot.openLog() }
                     }
                 }
-                .padding(.leading, 116)
+                .padding(.leading, 16)
                 .padding(.trailing, 14)
                 .padding(.vertical, 12)
                 .transition(.opacity)
@@ -273,38 +271,6 @@ private struct FixPanel: View {
                 }
             }
         }
-    }
-}
-
-/// Wrench, spinning gear and sparks around Mochi while a repair runs.
-/// Positions follow the `.venturo` bot position (64, 126 in island coords → 54, 84 here).
-private struct RepairOverlay: View {
-    @State private var swing = false
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30)) { tl in
-            let t = tl.date.timeIntervalSinceReferenceDate
-            ZStack {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 15)).foregroundColor(Color(hex: "#8E939C"))
-                    .rotationEffect(.degrees(t * 220))
-                    .position(x: 22, y: 52)
-                Image(systemName: "wrench.adjustable.fill")
-                    .font(.system(size: 19)).foregroundColor(Color(hex: "#C5C8CD"))
-                    .rotationEffect(.degrees(-30 + 50 * (0.5 + 0.5 * sin(t * 12))), anchor: .bottomLeading)
-                    .position(x: 92, y: 98)
-                ForEach(0..<4, id: \.self) { i in
-                    let phase = (t * 1.4 + Double(i) * 0.25).truncatingRemainder(dividingBy: 1)
-                    let angle = Double(i) * 1.6 + 0.4
-                    Circle().fill(Color(hex: "#FFD166"))
-                        .frame(width: 4, height: 4)
-                        .shadow(color: Color(hex: "#FFD166"), radius: 3)
-                        .opacity(1 - phase)
-                        .position(x: 100 + cos(angle) * 18 * phase, y: 104 + sin(angle) * 18 * phase)
-                }
-            }
-        }
-        .allowsHitTesting(false)
     }
 }
 #endif

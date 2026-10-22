@@ -44,7 +44,7 @@ final class LoomifyService: ObservableObject {
     private var listener: NWListener?
     private var refreshAgain = false
     /// An event arrived while the Loomify pill was focused and the user hasn't hovered the island yet:
-    /// Mochi hops with a bell and the compact island stays out until the hover.
+    /// The compact island shows the notice line and stays out until the hover.
     @Published private(set) var pendingNotice = false
     private var noticeCount = 0
     private var noticeTask: Task<Void, Never>?

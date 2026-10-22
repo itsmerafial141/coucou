@@ -29,14 +29,6 @@ struct IslandContainer: View {
     @State private var islandTopRadius: CGFloat = 0
     /// Compact notice: the island grows this much to the right of the notch (left edge stays put).
     @State private var noticeExtra: CGFloat = 0
-    #if !APPSTORE
-    @ObservedObject private var loomify = LoomifyService.shared
-    /// Loomify event waiting for a hover while its pill is focused: glow, hop and bell on the status dot.
-    private var loomifyPending: Bool {
-        loomify.pendingNotice && state.mode == .compact && state.focusId == LoomifyService.pillId
-    }
-    #endif
-
     private let openSpring = Animation.spring(response: 0.5, dampingFraction: 0.72)
     private let closeEase  = Animation.timingCurve(0.45, 0, 0.2, 1, duration: 0.34)
 
@@ -67,56 +59,29 @@ struct IslandContainer: View {
                     .transition(.opacity)
             }
 
-            #if !APPSTORE
-            if loomifyPending {
-                LoomifyNoticeGlow(islandHeight: islandHeight).transition(.opacity)
-            }
-            #endif
-
-            // Status dot where Mochi used to sit — always alive so it springs between views.
-            BotPlacement(state: state, islandW: islandWidth, islandH: islandHeight)
-                #if !APPSTORE
-                .modifier(LoomifyHop(active: loomifyPending))
-                #endif
-
             CountdownBar(state: state, islandW: islandWidth)
 
+            // The compact island only shows up to carry a notice (see islandSize).
+            #if !APPSTORE
             Group {
-                #if !APPSTORE
-                if state.mode == .compact {
-                    if let notice = state.compactNotice {
-                        CompactNoticeLine(notice: notice, notchWidth: state.notchWidth,
-                                          islandWidth: islandWidth + noticeExtra, islandHeight: islandHeight)
-                            .transition(.opacity)
-                    } else {
-                        CompactRightEar(state: state, islandWidth: islandWidth, islandHeight: islandHeight)
-                            .transition(.opacity)
-                    }
-                }
-                if loomifyPending {
-                    LoomifyNoticeBell(islandHeight: islandHeight).transition(.scale.combined(with: .opacity))
-                }
-                #else
-                if state.mode == .compact {
-                    CompactMiniGrid(state: state)
-                        .scaleEffect(IslandRestingLayout(width: islandWidth, height: islandHeight).miniGridScale)
-                        .position(x: islandWidth - 40, y: islandHeight / 2)
+                if state.mode == .compact, let notice = state.compactNotice {
+                    CompactNoticeLine(notice: notice, notchWidth: state.notchWidth,
+                                      islandWidth: islandWidth + noticeExtra, islandHeight: islandHeight)
                         .transition(.opacity)
                 }
-                #endif
             }
-            .animation(.easeInOut(duration: 0.25), value: state.mode == .compact)
             .animation(.easeInOut(duration: 0.25), value: state.compactNotice)
-            #if !APPSTORE
-            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: loomifyPending)
             #endif
         }
         .frame(width: islandWidth + noticeExtra, height: islandHeight, alignment: .topLeading)
         // Centered by the parent: shift by half the extra so only the right side grows.
         .offset(x: noticeExtra / 2)
         .onChange(of: state.compactNotice != nil && state.mode == .compact) { _, on in
+            let (w, h) = islandSize(mode: state.mode, view: state.view,
+                                    nw: state.notchWidth, nh: state.notchHeight)
             withAnimation(on ? openSpring : closeEase) {
                 noticeExtra = on ? compactNoticeExtra(nw: state.notchWidth) : 0
+                if state.mode == .compact { islandWidth = w; islandHeight = h }
             }
         }
         .onChange(of: state.mode) { oldMode, newMode in
@@ -251,121 +216,6 @@ struct IslandShape: Shape {
 
         p.closeSubpath()
         return p
-    }
-}
-
-// MARK: - Status dot (replaces Mochi)
-
-/// Colour of a session state, shared by the main dot and the mini dots.
-func statusColor(_ s: BotState) -> Color {
-    switch s {
-    case .working:   return Color(hex: "#3B9EFF")
-    case .thinking:  return Color(hex: "#A78BFA")
-    case .searching: return Color(hex: "#6366F1")
-    case .approval:  return Color(hex: "#F5A524")
-    case .question:  return Color(hex: "#22D3EE")
-    case .error:     return Color(hex: "#F4505E")
-    case .finished:  return Color(hex: "#34D399")
-    case .ratelimit: return Color(hex: "#F59E0B")
-    case .sleeping:  return Color(hex: "#94A2B8")
-    case .dizzy:     return Color(hex: "#F472B6")
-    case .idle:      return Color(hex: "#E6E9EE")
-    }
-}
-
-/// Static dot: no per-frame drawing, so it costs nothing between state changes.
-struct StatusDot: View {
-    let color: Color
-    var glow: Bool = true
-
-    var body: some View {
-        Circle()
-            .fill(color)
-            .shadow(color: color.opacity(glow ? 0.7 : 0), radius: 4)
-    }
-}
-
-/// Another session: its own colour, ringed with its state while it is busy or needs you.
-struct MiniStatusDot: View {
-    let task: AgentTask
-
-    var body: some View {
-        let ring = task.state != .idle && task.state != .sleeping
-        Circle()
-            .fill(Color(hex: task.color))
-            .overlay(Circle().stroke(statusColor(task.state), lineWidth: 1.5).opacity(ring ? 1 : 0))
-    }
-}
-
-struct BotPlacement: View {
-    @ObservedObject var state: AppState
-    let islandW: CGFloat
-    let islandH: CGFloat
-    /// Mac too hot (System tab threshold): red dot.
-    @State private var hot = false
-
-    /// Integration pills keep their brand colour; agent sessions show their state.
-    private var color: Color {
-        #if !APPSTORE
-        if hot { return Color(hex: "#F4505E") }
-        if state.showingPlanDetail {
-            return Color(hex: ClaudePlanGauge.color(for: state.claudePlanUsage.flatMap { ClaudePlanGauge.dominantPct($0) }))
-        }
-        #endif
-        if let task = state.focusTask, task.isIntegration, state.stateOverride == nil {
-            return Color(hex: task.color)
-        }
-        return statusColor(state.effectiveState)
-    }
-
-    var body: some View {
-        let (cx, cy, diameter, opacity) = botPosition(mode: state.mode, view: state.view, islandW: islandW, islandH: islandH, uploadProgress: state.uploadProgress, hasNotch: state.hasNotch)
-        // Expanded views keep Mochi's gutter; a small dot sits in its centre.
-        let size = state.mode == .expanded ? max(10, diameter * 0.26) : max(6, diameter * 0.5)
-        StatusDot(color: color, glow: state.effectiveState != .idle)
-            .frame(width: size, height: size)
-            // The uploading view draws its own progress bar.
-            .opacity(state.view == .uploading && state.mode == .expanded ? 0 : opacity)
-            .position(x: cx, y: cy)
-            .animation(.spring(response: 0.5, dampingFraction: 0.72), value: cx)
-            .animation(.spring(response: 0.5, dampingFraction: 0.72), value: cy)
-            .animation(.spring(response: 0.5, dampingFraction: 0.72), value: size)
-            .animation(.easeInOut(duration: 0.3), value: state.effectiveState)
-            .allowsHitTesting(false)
-            #if !APPSTORE
-            .onReceive(SystemMonitor.shared.$hot.removeDuplicates()) { hot = $0 }
-            #endif
-    }
-}
-
-func botPosition(mode: IslandMode, view: IslandView, islandW: CGFloat, islandH: CGFloat, uploadProgress: Double, hasNotch: Bool = true) -> (CGFloat, CGFloat, CGFloat, Double) {
-    let resting = IslandRestingLayout(width: islandW, height: islandH)
-    switch mode {
-    case .hidden:
-        return hasNotch ? (46, 16, 6, 0)
-            : (islandW / 2, resting.botCenterY, resting.botDiameter, 1)
-    case .compact: return (40, resting.botCenterY, resting.botDiameter, 1)
-    case .expanded:
-        let layout = IslandConst.viewLayouts[view]!
-        let diameter = layout.botDiameter
-        // Uploading: Mochi dot rides the leading edge of the progress fill.
-        // Bar in island coords: left=36, width=526. cx = 36 + progress*526 (dot center at fill right edge).
-        // cy comes from ViewLayout.botY (bar center in island coords).
-        if view == .uploading {
-            let cx = 36 + CGFloat(uploadProgress) * 526
-            return (cx, layout.botY ?? 103, diameter, 1)
-        }
-        let cx = layout.botX
-        let cy: CGFloat
-        if let fixedY = layout.botY {
-            cy = fixedY
-        } else {
-            // Center of the fixed 84pt card (VStack top=8, header=34 → content starts at y=42)
-            let headerBottom: CGFloat = 42
-            let cardH: CGFloat = 84
-            cy = headerBottom + (islandH - headerBottom - cardH) / 2 + cardH / 2
-        }
-        return (cx, cy, diameter, 1)
     }
 }
 
@@ -627,27 +477,3 @@ struct ClaudePlanHeaderPill: View {
 }
 #endif
 
-// MARK: - Compact mini mochi grid (2×2 to the right of the notch)
-
-struct CompactMiniGrid: View {
-    @ObservedObject var state: AppState
-
-    private var others: [AgentTask] {
-        state.tasks.filter { $0.id != state.focusId }
-    }
-
-    var body: some View {
-        let cols = [GridItem(.fixed(12), spacing: 4), GridItem(.fixed(12), spacing: 4)]
-        // 2×2 holds 4 faces; with more, the 4th slot becomes "+N".
-        let more = others.count > 4
-        LazyVGrid(columns: cols, spacing: 4) {
-            ForEach(more ? Array(others.prefix(3)) : others) { task in
-                MiniStatusDot(task: task)
-                    .frame(width: 8, height: 8)
-                    .frame(width: 12, height: 12, alignment: .center)
-            }
-            if more { MorePill(count: others.count - 3, size: 12) }
-        }
-        .frame(width: 28, height: 28)
-    }
-}

@@ -39,7 +39,7 @@ struct ClipboardView: View {
                 chips
                 strip
             }
-            .padding(.leading, 84)
+            .padding(.leading, 16)
             .padding(.top, 9)
             .padding(.bottom, 9)
 

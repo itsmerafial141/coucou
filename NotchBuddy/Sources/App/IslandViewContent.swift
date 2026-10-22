@@ -132,7 +132,7 @@ struct OverviewView: View {
                                 }
                             }
                             .padding(.top, 6)
-                            .padding(.leading, 108)
+                            .padding(.leading, 16)
                             .padding(.trailing, 36)
 
                             TickerView(task: agent, onDiffTap: { diffIdx in
@@ -140,7 +140,7 @@ struct OverviewView: View {
                             })
                                 .frame(height: 44)
                                 .padding(.top, 6)
-                                .padding(.leading, 108)
+                                .padding(.leading, 16)
                                 .padding(.trailing, 12)
                         }
                         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -362,7 +362,7 @@ struct EmptyStateView: View {
                     state.view = .prompt
                 }
             }
-            .padding(.leading, 118)
+            .padding(.leading, 16)
             .padding(.trailing, 18)
         }
     }
@@ -396,7 +396,7 @@ struct ApprovalView: View {
                     }
                 }
             }
-            .padding(.leading, 116)
+            .padding(.leading, 16)
             .padding(.trailing, 16)
             .padding(.vertical, 4)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -531,7 +531,7 @@ struct QuestionView: View {
                         .opacity(canProceed ? 1 : 0.4)
                     }
                 }
-                .padding(.leading, 116)
+                .padding(.leading, 16)
                 .padding(.trailing, 16)
                 .padding(.vertical, 4)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -610,7 +610,7 @@ struct ErrorView: View {
                     SecondaryButton("Open in n8n") { /* open */ }
                 }
             }
-            .padding(.leading, 116)
+            .padding(.leading, 16)
             .padding(.trailing, 16)
             .padding(.vertical, 4)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -654,7 +654,7 @@ struct FinishedView: View {
                     }
                 }
             }
-            .padding(.leading, 116)
+            .padding(.leading, 16)
             .padding(.trailing, 16)
             .padding(.vertical, 4)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -728,7 +728,7 @@ struct DiffCardView: View {
                 }
             }
         }
-        .padding(.leading, 108)
+        .padding(.leading, 16)
         .padding(.trailing, 10)
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -809,7 +809,7 @@ struct ConfusedView: View {
                 Text("Give me a sec — back to work in three seconds.")
                     .font(.system(size: 13)).foregroundColor(Color(hex: "#9398A1"))
             }
-            .padding(.leading, 128)
+            .padding(.leading, 16)
             .padding(.trailing, 18)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -848,7 +848,7 @@ struct UploadView: View {
                 ))
             if !shelfFiles.isEmpty && !state.fileDragOver {
                 ShelfView(state: state, files: shelfFiles)
-                    .padding(.leading, 196)
+                    .padding(.leading, 16)
                     .padding(.trailing, 28)
             } else {
             VStack(alignment: .leading, spacing: 8) {
@@ -866,7 +866,7 @@ struct UploadView: View {
                     }
                 }
             }
-            .padding(.leading, 196)
+            .padding(.leading, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
@@ -1051,7 +1051,7 @@ struct ChooseView: View {
                     SecondaryButton("Send by email") { state.view = .mail }
                 }
             }
-            .padding(.leading, 98)
+            .padding(.leading, 16)
             .padding(.trailing, 18)
             let files = state.droppedFiles.isEmpty ? [state.droppedFile?.url].compactMap { $0 } : state.droppedFiles
             if !files.isEmpty {
@@ -1114,7 +1114,7 @@ struct MailView: View {
                     SecondaryButton("Cancel") { state.view = .choose }
                 }
             }
-            .padding(.leading, 92)
+            .padding(.leading, 16)
             .padding(.trailing, 18)
             .padding(.vertical, 8)
         }
@@ -1362,7 +1362,7 @@ struct PromptView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .simultaneousGesture(TapGesture().onEnded { focused = true })
             }
-            .padding(.leading, 84)
+            .padding(.leading, 16)
             .padding(.trailing, 16)
             .padding(.top, 12)
             .padding(.bottom, 14)
@@ -1635,7 +1635,7 @@ struct SearchingView: View {
                 ShimmeringText(label)
                     .font(.system(size: 13.5))
             }
-            .padding(.leading, 84)
+            .padding(.leading, 16)
             .padding(.trailing, 16)
         }
     }
@@ -1689,7 +1689,7 @@ struct ResultView: View {
                         SecondaryButton("Close") { state.view = state.tasks.isEmpty ? .empty : .overview }
                     }
                 }
-                .padding(.leading, 84)
+                .padding(.leading, 16)
                 .padding(.trailing, 16)
             }
         }
@@ -1708,7 +1708,7 @@ struct NoteView: View {
                 Text(state.noteMessage ?? "")
                     .font(.system(size: 15, weight: .semibold))
             }
-            .padding(.leading, 98)
+            .padding(.leading, 16)
         }
     }
 }
@@ -2159,13 +2159,13 @@ struct IntegrationCardView: View {
                     }
                 }
                 .padding(.top, 6)
-                .padding(.leading, 108)
+                .padding(.leading, 16)
                 .padding(.trailing, 36)
 
                 TickerView(task: task, onDiffTap: onDiffTap)
                     .frame(height: 44)
                     .padding(.top, 6)
-                    .padding(.leading, 108)
+                    .padding(.leading, 16)
                     .padding(.trailing, 12)
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -2186,7 +2186,7 @@ struct IntegrationCardView: View {
                     Spacer(minLength: 2)
                 }
                 .padding(.top, 6)
-                .padding(.leading, 108)
+                .padding(.leading, 16)
                 .padding(.trailing, 36)
 
                 HStack(spacing: 5) {
@@ -2195,7 +2195,7 @@ struct IntegrationCardView: View {
                         .font(.system(size: 11))
                         .foregroundColor(Color(hex: "#6B7079"))
                 }
-                .padding(.leading, 108)
+                .padding(.leading, 16)
                 .padding(.top, 2)
 
                 HStack(spacing: 8) {
@@ -2331,7 +2331,7 @@ struct IntegrationCardView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.leading, 108)
+                .padding(.leading, 16)
                 .padding(.top, 2)
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -2390,7 +2390,7 @@ struct VercelDeploymentListView: View {
                     .foregroundColor(Color(hex: "#8E939C"))
             }
             .padding(.top, 6)
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 36)
 
             // Deployment rows
@@ -2442,7 +2442,7 @@ struct VercelDeploymentListView: View {
                 }
             }
             .padding(.top, 5)
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 12)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -2518,7 +2518,7 @@ struct VercelDetailView: View {
             }
         }
         .padding(.top, 8)
-        .padding(.leading, 108)
+        .padding(.leading, 16)
         .padding(.trailing, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .contentShape(Rectangle())
@@ -2566,7 +2566,7 @@ struct ResendCardView: View {
                 }
             }
             .padding(.top, 6)
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 36)
 
             // Email rows — first is highlighted, rest plain (same structure as Vercel list)
@@ -2614,7 +2614,7 @@ struct ResendCardView: View {
                 }
             }
             .padding(.top, 5)
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 12)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -2702,7 +2702,7 @@ struct GitHubPulseCardView: View {
                 }
             }
             .padding(.top, 6)
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 36)
 
             // Stat rows
@@ -2753,7 +2753,7 @@ struct GitHubPulseCardView: View {
                 ) { onTapSection(.mainCI) }
             }
             .padding(.top, 6)
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 12)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -2854,7 +2854,7 @@ struct GitHubDetailView: View {
                     Spacer(minLength: 2)
                 }
                 .padding(.top, 6)
-                .padding(.leading, 108)
+                .padding(.leading, 16)
                 .padding(.trailing, 12)
 
                 // List
@@ -2863,7 +2863,7 @@ struct GitHubDetailView: View {
                         .font(.system(size: 10.5))
                         .foregroundColor(Color(hex: "#6B7079"))
                         .padding(.top, 8)
-                        .padding(.leading, 108)
+                        .padding(.leading, 16)
                 } else {
                     ScrollView(.vertical, showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 0) {
@@ -2895,7 +2895,7 @@ struct GitHubDetailView: View {
                         }
                     )
                     .padding(.top, 4)
-                    .padding(.leading, 108)
+                    .padding(.leading, 16)
                     .padding(.trailing, 8)
                 }
             }
@@ -2991,7 +2991,7 @@ private struct GitHubActivityDetailContent: View {
                 }
             }
             .padding(.top, 6)
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 12)
 
             // Grid
@@ -3017,14 +3017,14 @@ private struct GitHubActivityDetailContent: View {
                     }
                 }
                 .padding(.top, 5)
-                .padding(.leading, 108)
+                .padding(.leading, 16)
                 .padding(.trailing, 12)
             } else {
                 Text("Loading…")
                     .font(.system(size: 10.5))
                     .foregroundColor(Color(hex: "#6B7079"))
                     .padding(.top, 8)
-                    .padding(.leading, 108)
+                    .padding(.leading, 16)
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -3191,7 +3191,7 @@ struct GitHubStatsCardView: View {
                     .foregroundColor(Color(hex: "#8E939C"))
             }
             .padding(.top, 6)
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 36)
 
             // Stats rows
@@ -3202,7 +3202,7 @@ struct GitHubStatsCardView: View {
                         label: "Repositories", value: "\(stats.totalRepos)")
             }
             .padding(.top, 8)
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 12)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -3260,7 +3260,7 @@ struct StripeCardView: View {
                     .foregroundColor(Color(hex: "#8E939C"))
             }
             .padding(.top, 6)
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 36)
 
             // Balance
@@ -3275,7 +3275,7 @@ struct StripeCardView: View {
                     .foregroundColor(Color(hex: "#6B7079"))
                     .padding(.bottom, 1)
             }
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.top, 4)
 
             // Payment rows (animated list)
@@ -3290,7 +3290,7 @@ struct StripeCardView: View {
             }
             .animation(.spring(response: 0.38, dampingFraction: 0.82),
                         value: appState.stripePayments.map(\.id))
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 12)
             .padding(.top, 4)
         }
@@ -3442,7 +3442,7 @@ struct CalcomCalendarView: View {
                 Text("Cal.com").font(.system(size: 12, weight: .semibold)).foregroundColor(Color(hex: "#F5F6F8"))
                 Text("Schedule").font(.system(size: 11)).foregroundColor(Color(hex: "#8E939C"))
             }
-            .padding(.top, 6).padding(.leading, 108).padding(.trailing, 36)
+            .padding(.top, 6).padding(.leading, 16).padding(.trailing, 36)
 
             HStack(spacing: 0) {
                 Button { goBack() } label: {
@@ -3456,7 +3456,7 @@ struct CalcomCalendarView: View {
                         .foregroundColor(Color(hex: "#6B7079")).frame(width: 18, height: 16)
                 }.buttonStyle(.plain)
             }
-            .padding(.leading, 108).padding(.trailing, 12).padding(.top, 2)
+            .padding(.leading, 16).padding(.trailing, 12).padding(.top, 2)
 
             VStack(spacing: 1) {
                 ForEach(visibleWeeks.indices, id: \.self) { i in
@@ -3464,7 +3464,7 @@ struct CalcomCalendarView: View {
                                   isToday: cal.isDateInToday, onSelect: onSelect)
                 }
             }
-            .padding(.leading, 108).padding(.trailing, 12).padding(.top, 2)
+            .padding(.leading, 16).padding(.trailing, 12).padding(.top, 2)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading).padding(.top, 4)
         .transition(.opacity)
@@ -3529,7 +3529,7 @@ struct CalcomDayView: View {
                 Button(action: onBack) {
                     Image(systemName: "chevron.left").font(.system(size: 9, weight: .semibold))
                         .foregroundColor(Color(hex: "#6B7079")).frame(width: 22, height: 22).contentShape(Rectangle())
-                }.buttonStyle(.plain).padding(.leading, 108)
+                }.buttonStyle(.plain).padding(.leading, 16)
                 Text(dayLabel).font(.system(size: 11, weight: .semibold)).foregroundColor(Color(hex: "#C5C8CD"))
                 Spacer()
             }
@@ -3537,7 +3537,7 @@ struct CalcomDayView: View {
 
             if bookings.isEmpty {
                 Text("No calls scheduled").font(.system(size: 11)).foregroundColor(Color(hex: "#6B7079"))
-                    .padding(.leading, 116).padding(.top, 8)
+                    .padding(.leading, 24).padding(.top, 8)
             } else {
                 VStack(alignment: .leading, spacing: 3) {
                     ForEach(bookings) { b in
@@ -3559,7 +3559,7 @@ struct CalcomDayView: View {
                         }.buttonStyle(.plain)
                     }
                 }
-                .padding(.leading, 108).padding(.trailing, 12).padding(.top, 5)
+                .padding(.leading, 16).padding(.trailing, 12).padding(.top, 5)
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading).padding(.top, 4)
@@ -3580,7 +3580,7 @@ struct CalcomBookingDetailView: View {
                 Button(action: onBack) {
                     Image(systemName: "chevron.left").font(.system(size: 9, weight: .semibold))
                         .foregroundColor(Color(hex: "#6B7079")).frame(width: 22, height: 22).contentShape(Rectangle())
-                }.buttonStyle(.plain).padding(.leading, 108)
+                }.buttonStyle(.plain).padding(.leading, 16)
                 Text(booking.timeLabel)
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundColor(Color(hex: "#C9956A"))
@@ -3601,7 +3601,7 @@ struct CalcomBookingDetailView: View {
                     CalcomDetailRow(icon: "note.text", text: notes, size: 10, lines: 2)
                 }
             }
-            .padding(.leading, 114).padding(.trailing, 12).padding(.top, 5)
+            .padding(.leading, 22).padding(.trailing, 12).padding(.top, 5)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading).padding(.top, 4)
         .transition(.opacity)
@@ -3635,7 +3635,7 @@ struct NotionCardView: View {
                 Text("Notion").font(.system(size: 12, weight: .semibold)).foregroundColor(Color(hex: "#F5F6F8"))
                 Text("Recent").font(.system(size: 11)).foregroundColor(Color(hex: "#8E939C"))
             }
-            .padding(.top, 6).padding(.leading, 108).padding(.trailing, 36)
+            .padding(.top, 6).padding(.leading, 22).padding(.trailing, 36)
 
             VStack(alignment: .leading, spacing: 2) {
                 ForEach(appState.notionPages.prefix(3)) { page in
@@ -3662,7 +3662,7 @@ struct NotionCardView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.leading, 102).padding(.trailing, 12).padding(.top, 5)
+            .padding(.leading, 16).padding(.trailing, 12).padding(.top, 5)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading).padding(.top, 4)
         .transition(.opacity)
@@ -3730,7 +3730,7 @@ struct N8nDetailView: View {
             }
         }
         .padding(.top, 8)
-        .padding(.leading, 108)
+        .padding(.leading, 16)
         .padding(.trailing, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .contentShape(Rectangle())   // prevent taps falling through transparent areas
@@ -4058,13 +4058,6 @@ struct AgentPill: View {
                               : Color(hex: "#0E0F11"))
                     Capsule()
                         .stroke(Color(hex: effectiveColor).opacity(isHovered ? 0.55 : 0.14), lineWidth: 1)
-                    HStack(spacing: 0) {
-                        MiniStatusDot(task: task)
-                            .frame(width: 10, height: 10)
-                            .frame(width: 22, height: 22, alignment: .center)
-                            .padding(.leading, 8)
-                        Spacer()
-                    }
                     Text(displayName)
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundColor(isHovered
@@ -4072,8 +4065,8 @@ struct AgentPill: View {
                                          : Color(hex: "#6B7079"))
                         .lineLimit(1)
                         .truncationMode(.tail)
-                        // Left-aligned right after the Mochi (8 + 22 + 6), same as MusicPill, so names line up.
-                        .padding(.leading, 36)
+                        // Same inset as MusicPill, so names line up.
+                        .padding(.leading, 14)
                         .padding(.trailing, 10)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -4131,23 +4124,13 @@ struct MusicPill: View {
                 .stroke(Color(hex: task.color).opacity(isHovered ? 0.55 : 0.14), lineWidth: 1)
                 .allowsHitTesting(false)
 
-            // Status dot at leading edge
-            HStack(spacing: 0) {
-                MiniStatusDot(task: task)
-                    .frame(width: 10, height: 10)
-                    .frame(width: 22, height: 22, alignment: .center)
-                    .padding(.leading, 8)
-                Spacer()
-            }
-            .allowsHitTesting(false)
-
             // Title — trailing padding grows on hover to make room for buttons
             Text(task.name)
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundColor(isHovered ? Color(hex: task.color).lighter(by: 0.3) : Color(hex: "#6B7079"))
                 .lineLimit(1)
                 .truncationMode(.tail)
-                .padding(.leading, 36)
+                .padding(.leading, 14)
                 .padding(.trailing, showControls ? 52 : 10)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .animation(.spring(response: 0.2, dampingFraction: 0.7), value: showControls)
@@ -4232,20 +4215,20 @@ struct MusicCardView: View {
                     Spacer(minLength: 2)
                 }
                 .padding(.top, 6)
-                .padding(.leading, 108)
+                .padding(.leading, 16)
                 .padding(.trailing, 36)
 
                 Text("Allow Coucou to control Music")
                     .font(.system(size: 11))
                     .foregroundColor(Color(hex: "#8E939C"))
-                    .padding(.leading, 108)
+                    .padding(.leading, 16)
                     .padding(.trailing, 12)
 
                 Button("Open Settings…") { MusicController.shared.openAutomationSettings() }
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(Color(hex: "#FA2D48").opacity(0.85))
                     .buttonStyle(.plain)
-                    .padding(.leading, 108)
+                    .padding(.leading, 16)
                     .padding(.top, 2)
             } else {
                 // Line 1: dot + title
@@ -4262,7 +4245,7 @@ struct MusicCardView: View {
                     }
                 }
                 .padding(.top, 6)
-                .padding(.leading, 108)
+                .padding(.leading, 16)
 
                 // Line 2: artist
                 if let artist = controller.artist {
@@ -4271,7 +4254,7 @@ struct MusicCardView: View {
                         .foregroundColor(Color(hex: "#8E939C"))
                         .lineLimit(1).truncationMode(.tail)
                         .frame(maxWidth: 150, alignment: .leading)
-                        .padding(.leading, 108)
+                        .padding(.leading, 16)
                 }
 
                 // Line 3: controls
@@ -4295,7 +4278,7 @@ struct MusicCardView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.leading, 108)
+                .padding(.leading, 16)
                 .padding(.top, 6)
             }
         }
@@ -4340,48 +4323,6 @@ struct PillBadgeView: View {
                 .foregroundColor(.black)
         }
         .shadow(color: badgeColor.opacity(0.6), radius: 4, x: 0, y: 0)
-    }
-}
-
-/// "+N" in the last slot of a mini Mochi grid/column when more pills are active than it holds.
-struct MorePill: View {
-    let count: Int
-    let size: CGFloat
-
-    var body: some View {
-        Text("+\(count)")
-            .font(.system(size: size * 0.5, weight: .bold, design: .rounded))
-            .foregroundColor(Color(hex: "#C5C8CD"))
-            .minimumScaleFactor(0.6)
-            .frame(width: size, height: size)
-            .background(Circle().fill(Color(hex: "#2A2D32")))
-    }
-}
-
-// MARK: - Column agents (right side of non-overview views)
-
-struct ColumnAgentsView: View {
-    @ObservedObject var state: AppState
-
-    var others: [AgentTask] {
-        state.tasks.filter { $0.id != state.focusId }
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            let shown = others.count > 4 ? Array(others.prefix(3)) : others
-            ForEach(Array(shown.enumerated()), id: \.1.id) { idx, task in
-                MiniStatusDot(task: task)
-                    .frame(width: 8, height: 8)
-                    .frame(width: 16, height: 16)
-                    .position(x: 0, y: CGFloat(50 + idx * 24))
-                    .animation(.spring(response: 0.5, dampingFraction: 0.72).delay(Double(idx) * 0.035), value: idx)
-            }
-            if others.count > 4 {
-                MorePill(count: others.count - 3, size: 16)
-                    .position(x: 0, y: CGFloat(50 + 3 * 24))
-            }
-        }
     }
 }
 
@@ -4760,7 +4701,7 @@ struct SettingsIslandView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.leading, 84)
+            .padding(.leading, 16)
             .padding(.trailing, 16)
             .padding(.vertical, 14)
         }

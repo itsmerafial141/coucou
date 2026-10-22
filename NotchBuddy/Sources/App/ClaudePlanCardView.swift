@@ -25,7 +25,7 @@ struct ClaudePlanCardView: View {
                     .fixedSize()
             }
             .padding(.top, 6)
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 36)
 
             // Gauge rows
@@ -34,7 +34,7 @@ struct ClaudePlanCardView: View {
                 GaugeRowView(label: "Week",    window: usage?.sevenDay,  now: now, weekly: true)
             }
             .padding(.top, 8)
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 12)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)

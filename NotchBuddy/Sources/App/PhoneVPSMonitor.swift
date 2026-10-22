@@ -50,7 +50,7 @@ final class PhoneVPSMonitor: ObservableObject {
         return (try? String(contentsOf: cfg, encoding: .utf8))?.contains("Host \(Self.sshHost)") ?? false
     }
 
-    /// Worst state across SSH, services and sites (drives the pill dot and Mochi).
+    /// Worst state across SSH, services and sites (drives the pill state).
     var overall: Health {
         if reachable == .failing { return .failing }
         if services.contains(where: { !$0.healthy }) || siteResults.contains(where: { !$0.healthy }) { return .failing }

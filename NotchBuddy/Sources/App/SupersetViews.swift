@@ -58,7 +58,7 @@ struct SupersetCardView: View {
                     }
                 }
             }
-            .padding(.leading, 108)
+            .padding(.leading, 16)
             .padding(.trailing, 36)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
 
@@ -91,7 +91,7 @@ struct SupersetCardView: View {
 
 // MARK: - Detail (IslandView.superset): workspace list
 
-/// Mochi sits at the top of the 116pt left gutter (`.superset` layout in IslandConst), totals below it.
+/// Totals in the 116pt left column, the workspaces to its right.
 struct SupersetListView: View {
     @ObservedObject var state: AppState
     @ObservedObject private var ss = SupersetService.shared
@@ -108,7 +108,7 @@ struct SupersetListView: View {
             gutter
                 .frame(width: 104, alignment: .leading)
                 .padding(.leading, 14)
-                .padding(.top, 80)
+                .padding(.top, 12)
                 .padding(.bottom, 12)
                 .frame(maxHeight: .infinity, alignment: .top)
             Group {

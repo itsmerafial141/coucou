@@ -26,7 +26,7 @@ struct SystemStatsView: View {
                     gpuTile
                 }
             }
-            .padding(.leading, 116)
+            .padding(.leading, 16)
             .padding(.trailing, 12)
             .padding(.vertical, 8)
         }
@@ -259,34 +259,5 @@ private struct Tile: View {
         .background(Color(hex: "#0E0F11"))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#2A2C31")))
-    }
-}
-
-/// Compact island's right ear: the mini pill grid, or the CPU temperature while the Mac is hot.
-struct CompactRightEar: View {
-    @ObservedObject var state: AppState
-    @ObservedObject private var mon = SystemMonitor.shared
-    let islandWidth: CGFloat
-    let islandHeight: CGFloat
-
-    var body: some View {
-        Group {
-            if mon.hot, let t = mon.cpuTemp {
-                HStack(spacing: 3) {
-                    Circle().fill(Color(hex: "#F4505E")).frame(width: 5, height: 5)
-                    Text("\(Int(t.rounded()))°")
-                        .font(.system(size: 11, weight: .semibold).monospacedDigit())
-                        .foregroundColor(Color(hex: "#FCA5A5"))
-                }
-                .help("Mac is hot: \(Int(t.rounded()))°C")
-                .transition(.scale.combined(with: .opacity))
-            } else {
-                CompactMiniGrid(state: state)
-                    .scaleEffect(IslandRestingLayout(width: islandWidth, height: islandHeight).miniGridScale)
-                    .transition(.opacity)
-            }
-        }
-        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: mon.hot)
-        .position(x: islandWidth - 40, y: islandHeight / 2)
     }
 }
