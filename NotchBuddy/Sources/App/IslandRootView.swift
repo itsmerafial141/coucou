@@ -295,7 +295,7 @@ struct IslandContentView: View {
                     // Views that fill available height instead of the fixed 98pt content frame:
                     // chat (prompt) is always flexible; mail is flexible only when active so
                     // it doesn't push the ZStack taller when inactive.
-                    let isTall = v == .prompt || v == .clipboard || v == .system || v == .jiggler || ((v == .mail || v == .spotify || v == .venturo || v == .discord || v == .phonevps || v == .loomify || v == .superset) && active)
+                    let isTall = v == .prompt || v == .clipboard || v == .system || v == .jiggler || v == .gamemode || ((v == .mail || v == .spotify || v == .venturo || v == .discord || v == .phonevps || v == .loomify || v == .superset) && active)
                     let anim: Animation = active
                         ? .spring(response: 0.4, dampingFraction: 0.8).delay(0.16)
                         : .easeIn(duration: 0.16)
@@ -355,28 +355,14 @@ struct IslandHeader: View {
                     ClaudePlanHeaderPill(state: state)
                 }
                 #endif
-                HStack(spacing: 14) {
+                // Same 30x22 capsules and spacing as the left tabs; sound lives in Settings.
+                HStack(spacing: 5) {
                     #if !APPSTORE
                     // Right group: a seventh tab on the left would sit under the camera notch.
                     TabButton(icon: "cursorarrow.motionlines", view: .jiggler, state: state)
+                    TabButton(icon: "gamecontroller", view: .gamemode, state: state)
                     #endif
-                    Button(action: {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                            state.view = .settings
-                        }
-                    }) {
-                        Image(systemName: state.view == .settings ? "gearshape.fill" : "gearshape")
-                            .font(.system(size: 14))
-                            .foregroundColor(state.view == .settings ? Color(hex: "#F5F6F8") : Color(hex: "#8E939C"))
-                    }
-                    .buttonStyle(.plain)
-
-                    Button(action: { state.soundEnabled.toggle() }) {
-                        Image(systemName: state.soundEnabled ? "speaker.wave.2" : "speaker.slash")
-                            .font(.system(size: 14))
-                            .foregroundColor(Color(hex: "#8E939C"))
-                    }
-                    .buttonStyle(.plain)
+                    TabButton(icon: "gearshape", view: .settings, state: state)
                 }
             }
             .padding(.trailing, 16)

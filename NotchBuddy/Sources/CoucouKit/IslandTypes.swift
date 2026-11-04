@@ -12,7 +12,7 @@ enum IslandView: String, CaseIterable {
     case overview, empty, approval, question, error, finished
     case confused, upload, uploading, choose, mail, prompt
     case searching, result, note, settings
-    case menuBar, spotify, venturo, discord, clipboard, system, phonevps, loomify, superset, jiggler
+    case menuBar, spotify, venturo, discord, clipboard, system, phonevps, loomify, superset, jiggler, gamemode
 }
 
 // MARK: - Bot State
@@ -182,6 +182,7 @@ enum IslandConst {
         .system:    ViewLayout(height: 228),
         .clipboard: ViewLayout(height: 196),
         .jiggler:   ViewLayout(height: 180),
+        .gamemode:  ViewLayout(height: 150),
         .spotify:   ViewLayout(height: 196),
         .venturo:   ViewLayout(height: 244),
         // Phone VPS: the 8 service rows + stats + actions need ~212pt of card: 264 keeps the 10pt bottom margin.

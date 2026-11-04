@@ -38,6 +38,12 @@ struct IslandViewContent: View {
             #else
             EmptyView()
             #endif
+        case .gamemode:
+            #if !APPSTORE
+            GameModeView(state: state)
+            #else
+            EmptyView()
+            #endif
         case .spotify:
             #if !APPSTORE
             SpotifyPlayerView(state: state)

@@ -54,6 +54,7 @@
 		2DEB459FBD0BA3CEAAA5FDE9 /* ClaudeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A83D5410BD030B243ADDCFF4 /* ClaudeService.swift */; };
 		2E9F3FE138E218548B8E2BA2 /* PhoneVPSParsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8176D63E2CF4E9AA1FFE89AA /* PhoneVPSParsing.swift */; };
 		2F36E3C6C073E968A682AFA4 /* NotionPoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE03E03D1804B0B92C5C2DAD /* NotionPoller.swift */; };
+		3590058BB3865F7EAEB1F54B /* GameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 369861ADCC6C610943A50D52 /* GameMode.swift */; };
 		3756B7E1A55D9CEC8C4D34A4 /* IslandStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8212018F09EA1E96FBD63CD /* IslandStateMachine.swift */; };
 		38BED0B0BDC4A15A9411199D /* SystemMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB7F2B1E3F631564873A43D /* SystemMonitor.swift */; };
 		38EA19EC7B568753AF8CE870 /* VenturoBotMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = E71A0CDBD6166238CB248A68 /* VenturoBotMonitor.swift */; };
@@ -194,6 +195,7 @@
 		DE05D09A32117582AC93A24A /* NotchBuddyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1BD8F3CAA60CF37640759E1 /* NotchBuddyApp.swift */; };
 		DE66BB6D18F467A7F4220CC3 /* SessionPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 824E56D2255CA86DAC350DBF /* SessionPublisher.swift */; };
 		DFFB890BDBA9094295346D2F /* LoomifyViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B9960819FA9C7D43272236E /* LoomifyViews.swift */; };
+		E23542777CF2B9C437150FDF /* GameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 369861ADCC6C610943A50D52 /* GameMode.swift */; };
 		E2414533EDC7565286141198 /* SpotifyController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A9E6EB7C8468A8339CF6A5C /* SpotifyController.swift */; };
 		E455AEC6DA870A15D066F4EC /* VenturoViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1648DC2D9BA295F3605A318C /* VenturoViews.swift */; };
 		E4B9986674F4D425826F15A8 /* StripePoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EF78999D68D56ADE4CEFBE2 /* StripePoller.swift */; };
@@ -308,6 +310,7 @@
 		31720A18CA6F97E7F65D2540 /* DiscordService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscordService.swift; sourceTree = "<group>"; };
 		3232F258523DD8D09B670363 /* FileDropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileDropView.swift; sourceTree = "<group>"; };
 		323F242B14A61A7C071EC115 /* MochiActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MochiActivityAttributes.swift; sourceTree = "<group>"; };
+		369861ADCC6C610943A50D52 /* GameMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameMode.swift; sourceTree = "<group>"; };
 		369F5AFDE37A03A1C25EB262 /* Decisions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Decisions.swift; sourceTree = "<group>"; };
 		38BEAB5F20A13E5806A42EC9 /* ApprovalCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApprovalCard.swift; sourceTree = "<group>"; };
 		3A27178AA6007F7B56901750 /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
@@ -425,6 +428,7 @@
 				3232F258523DD8D09B670363 /* FileDropView.swift */,
 				8EB03F042B25E1A5D82F85B3 /* FileStackLogic.swift */,
 				AD3CB25D7EC123A424B250A9 /* FileStackView.swift */,
+				369861ADCC6C610943A50D52 /* GameMode.swift */,
 				168A9A73B519018FAB0AA465 /* GitHubActivity.swift */,
 				8CB8B6E5E9DA6164F979E88F /* GithubPoller.swift */,
 				F8D3AD61802A32C4833F3EDA /* GitHubPulse.swift */,
@@ -793,6 +797,7 @@
 				E776C7D1DE5C62EA8D4BA3E3 /* FileDropView.swift in Sources */,
 				4A9BD7C5EAB2B6F477492E42 /* FileStackLogic.swift in Sources */,
 				665AF64BE06B0ECDF1B8C0C8 /* FileStackView.swift in Sources */,
+				3590058BB3865F7EAEB1F54B /* GameMode.swift in Sources */,
 				D9FF132804EB458F6FA69116 /* GitHubActivity.swift in Sources */,
 				862CE6CB220D55E46F646DA9 /* GitHubPulse.swift in Sources */,
 				C808B654C84D9F71DBF8493A /* GithubPoller.swift in Sources */,
@@ -925,6 +930,7 @@
 				2132477000FD77F7EB234DAA /* FileDropView.swift in Sources */,
 				92C073175293C76F4C93C66D /* FileStackLogic.swift in Sources */,
 				7424E3267618CB4741204613 /* FileStackView.swift in Sources */,
+				E23542777CF2B9C437150FDF /* GameMode.swift in Sources */,
 				63093DC288B68F7F17249517 /* GitHubActivity.swift in Sources */,
 				38EEB2D3A6EC538958D92575 /* GitHubPulse.swift in Sources */,
 				C18227D148D99FE6EE3CC51A /* GithubPoller.swift in Sources */,
